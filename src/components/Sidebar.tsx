@@ -33,6 +33,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: "sales", label: "Sales", icon: ShoppingCart },
     { id: "alerts", label: "Stock Alerts", icon: AlertTriangle },
     { id: "reports", label: "Reports", icon: BarChart3 },
+    { id: "settings", label: "Settings", icon: Settings },
   ];
 
   const handleLogout = () => {
