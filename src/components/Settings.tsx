@@ -211,7 +211,10 @@ export const Settings = () => {
                         </div>
                         <div>
                           <Label htmlFor="role">Role</Label>
-                          <Select value={newUser.role} onValueChange={(value: "admin" | "manager" | "staff") => setNewUser({...newUser, role: value})}>
+                          <Select 
+                            value={newUser.role} 
+                            onValueChange={(value: "admin" | "manager" | "staff") => setNewUser({...newUser, role: value})}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>

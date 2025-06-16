@@ -1,4 +1,3 @@
-
 import { 
   ShoppingCart, 
   DollarSign, 
@@ -9,16 +8,46 @@ import {
   Plus,
   Filter,
   Download,
-  Search
+  Search,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
+interface SaleItem {
+  name: string;
+  qty: number;
+  price: number;
+}
+
+interface Sale {
+  id: string;
+  customer: string;
+  items: SaleItem[];
+  total: number;
+  status: "completed" | "pending" | "cancelled";
+  date: string;
+  time: string;
+}
+
 export const Sales = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddSaleOpen, setIsAddSaleOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [newSale, setNewSale] = useState({
+    customer: "",
+    items: [{ name: "", qty: 1, price: 0 }],
+    status: "pending" as const
+  });
 
   const salesStats = [
     {
@@ -55,7 +84,7 @@ export const Sales = () => {
     }
   ];
 
-  const recentSales = [
+  const [recentSales, setRecentSales] = useState<Sale[]>([
     {
       id: "S001",
       customer: "Room 301",
@@ -103,7 +132,7 @@ export const Sales = () => {
       date: "2024-06-16",
       time: "11:20"
     }
-  ];
+  ]);
 
   const topSellingItems = [
     { name: "Coffee Pods", sold: 156, revenue: 468.00, trend: "+12%" },
@@ -112,6 +141,81 @@ export const Sales = () => {
     { name: "Bed Sheets", sold: 45, revenue: 3825.00, trend: "+5%" },
     { name: "Cleaning Supplies", sold: 78, revenue: 936.00, trend: "+18%" }
   ];
+
+  const handleAddSale = () => {
+    if (!newSale.customer || newSale.items.some(item => !item.name || item.qty === 0)) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const total = newSale.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+    const sale: Sale = {
+      id: `S${String(Date.now()).slice(-3)}`,
+      customer: newSale.customer,
+      items: newSale.items,
+      total,
+      status: newSale.status,
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+    };
+
+    setRecentSales([sale, ...recentSales]);
+    setNewSale({
+      customer: "",
+      items: [{ name: "", qty: 1, price: 0 }],
+      status: "pending"
+    });
+    setIsAddSaleOpen(false);
+
+    toast({
+      title: "Success",
+      description: "Sale added successfully.",
+    });
+  };
+
+  const handleUpdateSale = (saleId: string, updates: Partial<Sale>) => {
+    setRecentSales(recentSales.map(sale => 
+      sale.id === saleId ? { ...sale, ...updates } : sale
+    ));
+    
+    toast({
+      title: "Success",
+      description: "Sale updated successfully.",
+    });
+  };
+
+  const handleDeleteSale = (saleId: string) => {
+    setRecentSales(recentSales.filter(sale => sale.id !== saleId));
+    toast({
+      title: "Success",
+      description: "Sale deleted successfully.",
+    });
+  };
+
+  const addItemToSale = () => {
+    setNewSale({
+      ...newSale,
+      items: [...newSale.items, { name: "", qty: 1, price: 0 }]
+    });
+  };
+
+  const removeItemFromSale = (index: number) => {
+    setNewSale({
+      ...newSale,
+      items: newSale.items.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateSaleItem = (index: number, field: string, value: any) => {
+    const updatedItems = newSale.items.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    );
+    setNewSale({ ...newSale, items: updatedItems });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,10 +243,106 @@ export const Sales = () => {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            New Sale
-          </Button>
+          <Dialog open={isAddSaleOpen} onOpenChange={setIsAddSaleOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                New Sale
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Sale</DialogTitle>
+                <DialogDescription>
+                  Create a new sale record for a customer.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="customer">Customer</Label>
+                  <Input
+                    id="customer"
+                    value={newSale.customer}
+                    onChange={(e) => setNewSale({...newSale, customer: e.target.value})}
+                    placeholder="e.g., Room 301, Guest Name"
+                  />
+                </div>
+                <div>
+                  <Label>Items</Label>
+                  <div className="space-y-3">
+                    {newSale.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-5">
+                          <Input
+                            placeholder="Item name"
+                            value={item.name}
+                            onChange={(e) => updateSaleItem(index, 'name', e.target.value)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            type="number"
+                            placeholder="Qty"
+                            value={item.qty}
+                            onChange={(e) => updateSaleItem(index, 'qty', parseInt(e.target.value) || 1)}
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="Price"
+                            value={item.price}
+                            onChange={(e) => updateSaleItem(index, 'price', parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          {newSale.items.length > 1 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeItemFromSale(index)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addItemToSale}
+                    className="mt-2"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add Item
+                  </Button>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select value={newSale.status} onValueChange={(value: "completed" | "pending" | "cancelled") => setNewSale({...newSale, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddSaleOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddSale}>Add Sale</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -206,9 +406,26 @@ export const Sales = () => {
                       {sale.status}
                     </Badge>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg text-gray-900">${sale.total.toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">{sale.date} {sale.time}</p>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right">
+                      <p className="font-bold text-lg text-gray-900">${sale.total.toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">{sale.date} {sale.time}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingSale(sale)}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteSale(sale.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
                   </div>
                 </div>
                 <div className="mb-2">
@@ -255,6 +472,58 @@ export const Sales = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Sale Dialog */}
+      {editingSale && (
+        <Dialog open={!!editingSale} onOpenChange={() => setEditingSale(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Sale</DialogTitle>
+              <DialogDescription>
+                Update sale information and status.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Customer</Label>
+                <Input
+                  value={editingSale.customer}
+                  onChange={(e) => setEditingSale({...editingSale, customer: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select 
+                  value={editingSale.status} 
+                  onValueChange={(value: "completed" | "pending" | "cancelled") => 
+                    setEditingSale({...editingSale, status: value})
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingSale(null)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                handleUpdateSale(editingSale.id, editingSale);
+                setEditingSale(null);
+              }}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

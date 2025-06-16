@@ -1,13 +1,38 @@
-
 import { useState } from "react";
-import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench } from "lucide-react";
+import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+
+interface InventoryItem {
+  id: number;
+  name: string;
+  category: string;
+  currentStock: number;
+  minStock: number;
+  unit: string;
+  location: string;
+  lastUpdated: string;
+}
 
 export const InventoryManager = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [newItem, setNewItem] = useState({
+    name: "",
+    category: "rooms",
+    currentStock: 0,
+    minStock: 0,
+    unit: "pieces",
+    location: ""
+  });
 
   const categories = [
     { id: "all", name: "All Items", icon: Package, color: "bg-gray-500" },
@@ -17,7 +42,7 @@ export const InventoryManager = () => {
     { id: "maintenance", name: "Maintenance", icon: Wrench, color: "bg-purple-500" },
   ];
 
-  const inventoryItems = [
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
     {
       id: 1,
       name: "Premium Bath Towels",
@@ -78,7 +103,59 @@ export const InventoryManager = () => {
       location: "Linen Room B",
       lastUpdated: "1 day ago"
     }
-  ];
+  ]);
+
+  const handleAddItem = () => {
+    if (!newItem.name || !newItem.location) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const item: InventoryItem = {
+      id: Date.now(),
+      ...newItem,
+      lastUpdated: "Just now"
+    };
+
+    setInventoryItems([...inventoryItems, item]);
+    setNewItem({
+      name: "",
+      category: "rooms",
+      currentStock: 0,
+      minStock: 0,
+      unit: "pieces",
+      location: ""
+    });
+    setIsAddItemOpen(false);
+
+    toast({
+      title: "Success",
+      description: "Item added successfully.",
+    });
+  };
+
+  const handleUpdateItem = (itemId: number, updates: Partial<InventoryItem>) => {
+    setInventoryItems(inventoryItems.map(item => 
+      item.id === itemId ? { ...item, ...updates, lastUpdated: "Just now" } : item
+    ));
+    
+    toast({
+      title: "Success",
+      description: "Item updated successfully.",
+    });
+  };
+
+  const handleDeleteItem = (itemId: number) => {
+    setInventoryItems(inventoryItems.filter(item => item.id !== itemId));
+    toast({
+      title: "Success",
+      description: "Item deleted successfully.",
+    });
+  };
 
   const filteredItems = inventoryItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -99,10 +176,93 @@ export const InventoryManager = () => {
           <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-gray-600 mt-2">Manage and track all hotel inventory items</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Item
-        </Button>
+        <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Item
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Inventory Item</DialogTitle>
+              <DialogDescription>
+                Add a new item to your inventory system.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="itemName">Item Name</Label>
+                <Input
+                  id="itemName"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                  placeholder="Enter item name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select value={newItem.category} onValueChange={(value) => setNewItem({...newItem, category: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rooms">Room Amenities</SelectItem>
+                    <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                    <SelectItem value="minibar">Minibar & F&B</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="currentStock">Current Stock</Label>
+                  <Input
+                    id="currentStock"
+                    type="number"
+                    value={newItem.currentStock}
+                    onChange={(e) => setNewItem({...newItem, currentStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="minStock">Minimum Stock</Label>
+                  <Input
+                    id="minStock"
+                    type="number"
+                    value={newItem.minStock}
+                    onChange={(e) => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="unit">Unit</Label>
+                  <Input
+                    id="unit"
+                    value={newItem.unit}
+                    onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
+                    placeholder="e.g., pieces, bottles, sets"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={newItem.location}
+                    onChange={(e) => setNewItem({...newItem, location: e.target.value})}
+                    placeholder="Storage location"
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddItemOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddItem}>Add Item</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filter */}
@@ -197,11 +357,22 @@ export const InventoryManager = () => {
                 </div>
 
                 <div className="flex space-x-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    Update Stock
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => setEditingItem(item)}
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    Edit
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1">
-                    View Details
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => handleDeleteItem(item.id)}
+                  >
+                    <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
               </CardContent>
@@ -218,6 +389,65 @@ export const InventoryManager = () => {
             <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Edit Item Dialog */}
+      {editingItem && (
+        <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Inventory Item</DialogTitle>
+              <DialogDescription>
+                Update item information and stock levels.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Item Name</Label>
+                <Input
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Current Stock</Label>
+                  <Input
+                    type="number"
+                    value={editingItem.currentStock}
+                    onChange={(e) => setEditingItem({...editingItem, currentStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+                <div>
+                  <Label>Minimum Stock</Label>
+                  <Input
+                    type="number"
+                    value={editingItem.minStock}
+                    onChange={(e) => setEditingItem({...editingItem, minStock: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Location</Label>
+                <Input
+                  value={editingItem.location}
+                  onChange={(e) => setEditingItem({...editingItem, location: e.target.value})}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingItem(null)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                handleUpdateItem(editingItem.id, editingItem);
+                setEditingItem(null);
+              }}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
