@@ -1,4 +1,3 @@
-
 import { 
   LayoutDashboard, 
   Package, 
@@ -6,7 +5,8 @@ import {
   BarChart3,
   Building2,
   Settings,
-  Bell
+  Bell,
+  ShoppingCart
 } from "lucide-react";
 
 interface SidebarProps {
@@ -18,6 +18,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "inventory", label: "Inventory", icon: Package },
+    { id: "sales", label: "Sales", icon: ShoppingCart },
     { id: "alerts", label: "Stock Alerts", icon: AlertTriangle },
     { id: "reports", label: "Reports", icon: BarChart3 },
   ];
