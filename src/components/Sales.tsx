@@ -323,7 +323,7 @@ export const Sales = () => {
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <Select value={newSale.status} onValueChange={(value: "completed" | "pending" | "cancelled") => setNewSale({...newSale, status: value})}>
+                  <Select value={newSale.status} onValueChange={(value) => setNewSale({...newSale, status: value as "completed" | "pending" | "cancelled"})}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -495,8 +495,8 @@ export const Sales = () => {
                 <Label>Status</Label>
                 <Select 
                   value={editingSale.status} 
-                  onValueChange={(value: "completed" | "pending" | "cancelled") => 
-                    setEditingSale({...editingSale, status: value})
+                  onValueChange={(value) => 
+                    setEditingSale({...editingSale, status: value as "completed" | "pending" | "cancelled"})
                   }
                 >
                   <SelectTrigger>
