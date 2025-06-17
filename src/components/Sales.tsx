@@ -142,6 +142,47 @@ export const Sales = () => {
     { name: "Cleaning Supplies", sold: 78, revenue: 936.00, trend: "+18%" }
   ];
 
+  const handleExportSales = () => {
+    try {
+      // Create CSV content
+      const headers = ['Sale ID', 'Customer', 'Items', 'Total', 'Status', 'Date', 'Time'];
+      const csvContent = [
+        headers.join(','),
+        ...recentSales.map(sale => [
+          sale.id,
+          `"${sale.customer}"`,
+          `"${sale.items.map(item => `${item.name} (${item.qty}x$${item.price})`).join('; ')}"`,
+          sale.total.toFixed(2),
+          sale.status,
+          sale.date,
+          sale.time
+        ].join(','))
+      ].join('\n');
+
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sales_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Success",
+        description: "Sales data exported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export sales data.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAddSale = () => {
     if (!newSale.customer || newSale.items.some(item => !item.name || item.qty === 0)) {
       toast({
@@ -239,7 +280,7 @@ export const Sales = () => {
           <p className="text-gray-600 mt-2">Track sales and revenue for Hotel Celeste</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleExportSales}>
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
