@@ -46,7 +46,7 @@ export const Sales = () => {
   const [newSale, setNewSale] = useState({
     customer: "",
     items: [{ name: "", qty: 1, price: 0 }],
-    status: "pending" as const
+    status: "pending" as "completed" | "pending" | "cancelled"
   });
 
   const salesStats = [
@@ -167,7 +167,7 @@ export const Sales = () => {
     setNewSale({
       customer: "",
       items: [{ name: "", qty: 1, price: 0 }],
-      status: "pending"
+      status: "pending" as "completed" | "pending" | "cancelled"
     });
     setIsAddSaleOpen(false);
 
@@ -495,8 +495,8 @@ export const Sales = () => {
                 <Label>Status</Label>
                 <Select 
                   value={editingSale.status} 
-                  onValueChange={(value) => 
-                    setEditingSale({...editingSale, status: value as "completed" | "pending" | "cancelled"})
+                  onValueChange={(value: "completed" | "pending" | "cancelled") => 
+                    setEditingSale({...editingSale, status: value})
                   }
                 >
                   <SelectTrigger>

@@ -36,7 +36,7 @@ export const Settings = () => {
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
-    role: "staff" as const,
+    role: "staff" as "admin" | "manager" | "staff",
     permissions: {
       inventory: false,
       sales: false,
@@ -402,8 +402,8 @@ export const Settings = () => {
                 <Label>Role</Label>
                 <Select 
                   value={editingUser.role} 
-                  onValueChange={(value) => 
-                    setEditingUser({...editingUser, role: value as "admin" | "manager" | "staff"})
+                  onValueChange={(value: "admin" | "manager" | "staff") => 
+                    setEditingUser({...editingUser, role: value})
                   }
                 >
                   <SelectTrigger>
