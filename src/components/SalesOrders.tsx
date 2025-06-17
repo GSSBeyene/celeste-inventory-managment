@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,16 +32,19 @@ import {
   Edit, 
   Trash2, 
   Search, 
-  FileText,
-  Calendar,
-  DollarSign
+  Package,
+  Truck,
+  DollarSign,
+  ShoppingCart
 } from "lucide-react";
 
 interface SalesOrderItem {
   id: string;
   name: string;
+  category: string;
   quantity: number;
-  price: number;
+  unitPrice: number;
+  totalPrice: number;
 }
 
 interface SalesOrder {
@@ -52,13 +54,14 @@ interface SalesOrder {
   customerEmail: string;
   customerPhone: string;
   orderDate: string;
-  checkInDate: string;
-  checkOutDate: string;
-  roomType: string;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  deliveryDate: string;
+  status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled";
   items: SalesOrderItem[];
+  subtotal: number;
+  tax: number;
   totalAmount: number;
   notes: string;
+  department: string;
 }
 
 export const SalesOrders = () => {
@@ -68,6 +71,8 @@ export const SalesOrders = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<SalesOrder | null>(null);
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [selectedOrderForItem, setSelectedOrderForItem] = useState<string | null>(null);
 
   const [newOrder, setNewOrder] = useState<Omit<SalesOrder, "id">>({
     orderNumber: "",
@@ -75,39 +80,49 @@ export const SalesOrders = () => {
     customerEmail: "",
     customerPhone: "",
     orderDate: new Date().toISOString().split('T')[0],
-    checkInDate: "",
-    checkOutDate: "",
-    roomType: "",
+    deliveryDate: "",
     status: "pending",
     items: [],
+    subtotal: 0,
+    tax: 0,
     totalAmount: 0,
-    notes: ""
+    notes: "",
+    department: ""
+  });
+
+  const [newItem, setNewItem] = useState<Omit<SalesOrderItem, "id" | "totalPrice">>({
+    name: "",
+    category: "",
+    quantity: 1,
+    unitPrice: 0
   });
 
   const [orders, setOrders] = useState<SalesOrder[]>([
     {
       id: "1",
       orderNumber: "SO-2024-001",
-      customerName: "John Smith",
-      customerEmail: "john@email.com",
+      customerName: "Hotel Paradise",
+      customerEmail: "orders@hotelparadise.com",
       customerPhone: "+1234567890",
       orderDate: "2024-01-15",
-      checkInDate: "2024-02-01",
-      checkOutDate: "2024-02-05",
-      roomType: "Deluxe Suite",
+      deliveryDate: "2024-01-22",
       status: "confirmed",
       items: [
-        { id: "1", name: "Room Service", quantity: 2, price: 50 },
-        { id: "2", name: "Spa Treatment", quantity: 1, price: 120 }
+        { id: "1", name: "Luxury Toiletries", category: "Amenities", quantity: 100, unitPrice: 12.50, totalPrice: 1250 },
+        { id: "2", name: "Branded Towels", category: "Linens", quantity: 50, unitPrice: 35.00, totalPrice: 1750 }
       ],
-      totalAmount: 220,
-      notes: "Anniversary celebration"
+      subtotal: 3000,
+      tax: 300,
+      totalAmount: 3300,
+      notes: "Bulk order for new hotel opening",
+      department: "Sales"
     }
   ]);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.department.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -126,13 +141,14 @@ export const SalesOrders = () => {
       customerEmail: "",
       customerPhone: "",
       orderDate: new Date().toISOString().split('T')[0],
-      checkInDate: "",
-      checkOutDate: "",
-      roomType: "",
+      deliveryDate: "",
       status: "pending",
       items: [],
+      subtotal: 0,
+      tax: 0,
       totalAmount: 0,
-      notes: ""
+      notes: "",
+      department: ""
     });
     setIsAddDialogOpen(false);
     toast({
@@ -163,25 +179,76 @@ export const SalesOrders = () => {
     });
   };
 
+  const handleAddItem = () => {
+    if (!selectedOrderForItem || !newItem.name || newItem.quantity === 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const item: SalesOrderItem = {
+      ...newItem,
+      id: Date.now().toString(),
+      totalPrice: newItem.quantity * newItem.unitPrice
+    };
+
+    setOrders(orders.map(order => 
+      order.id === selectedOrderForItem 
+        ? { ...order, items: [...order.items, item] }
+        : order
+    ));
+
+    setNewItem({
+      name: "",
+      category: "",
+      quantity: 1,
+      unitPrice: 0
+    });
+    setIsAddItemDialogOpen(false);
+    setSelectedOrderForItem(null);
+
+    toast({
+      title: "Success",
+      description: "Item added to order successfully!"
+    });
+  };
+
+  const handleDeleteItem = (orderId: string, itemId: string) => {
+    setOrders(orders.map(order => 
+      order.id === orderId 
+        ? { ...order, items: order.items.filter(item => item.id !== itemId) }
+        : order
+    ));
+    
+    toast({
+      title: "Success",
+      description: "Item removed from order successfully!"
+    });
+  };
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: "secondary",
       confirmed: "default",
-      completed: "default",
+      shipped: "default",
+      delivered: "default",
       cancelled: "destructive"
     } as const;
     
     return <Badge variant={variants[status as keyof typeof variants] || "secondary"}>{status}</Badge>;
   };
 
-  const roomTypes = ["Standard Room", "Deluxe Room", "Suite", "Deluxe Suite", "Presidential Suite"];
+  const departments = ["Sales", "Marketing", "Customer Service", "Operations", "Management"];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Sales Orders</h1>
-          <p className="text-gray-600">Manage hotel reservations and sales orders</p>
+          <p className="text-gray-600">Manage customer orders and sales</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -220,32 +287,50 @@ export const SalesOrders = () => {
                 />
               </div>
               <div>
-                <Label>Room Type</Label>
-                <Select value={newOrder.roomType} onValueChange={(value) => setNewOrder({...newOrder, roomType: value})}>
+                <Label>Department</Label>
+                <Select value={newOrder.department} onValueChange={(value) => setNewOrder({...newOrder, department: value})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select room type" />
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
-                    {roomTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Check-in Date</Label>
+                <Label>Order Date</Label>
                 <Input
                   type="date"
-                  value={newOrder.checkInDate}
-                  onChange={(e) => setNewOrder({...newOrder, checkInDate: e.target.value})}
+                  value={newOrder.orderDate}
+                  onChange={(e) => setNewOrder({...newOrder, orderDate: e.target.value})}
                 />
               </div>
               <div>
-                <Label>Check-out Date</Label>
+                <Label>Delivery Date</Label>
                 <Input
                   type="date"
-                  value={newOrder.checkOutDate}
-                  onChange={(e) => setNewOrder({...newOrder, checkOutDate: e.target.value})}
+                  value={newOrder.deliveryDate}
+                  onChange={(e) => setNewOrder({...newOrder, deliveryDate: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Subtotal ($)</Label>
+                <Input
+                  type="number"
+                  value={newOrder.subtotal}
+                  onChange={(e) => setNewOrder({...newOrder, subtotal: parseFloat(e.target.value) || 0})}
+                  placeholder="Enter subtotal"
+                />
+              </div>
+              <div>
+                <Label>Tax ($)</Label>
+                <Input
+                  type="number"
+                  value={newOrder.tax}
+                  onChange={(e) => setNewOrder({...newOrder, tax: parseFloat(e.target.value) || 0})}
+                  placeholder="Enter tax amount"
                 />
               </div>
               <div>
@@ -259,14 +344,15 @@ export const SalesOrders = () => {
               </div>
               <div>
                 <Label>Status</Label>
-                <Select value={newOrder.status} onValueChange={(value) => setNewOrder({...newOrder, status: value as "pending" | "confirmed" | "completed" | "cancelled"})}>
+                <Select value={newOrder.status} onValueChange={(value) => setNewOrder({...newOrder, status: value as "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"})}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
@@ -295,7 +381,7 @@ export const SalesOrders = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{orders.length}</div>
@@ -303,31 +389,29 @@ export const SalesOrders = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed Orders</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{orders.filter(o => o.status === 'confirmed').length}</div>
+            <div className="text-2xl font-bold">{orders.filter(o => o.status === 'pending').length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Shipped</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{orders.filter(o => o.status === 'shipped').length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Value</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${orders.reduce((sum, order) => sum + order.totalAmount, 0).toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Order Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${orders.length > 0 ? (orders.reduce((sum, order) => sum + order.totalAmount, 0) / orders.length).toFixed(0) : 0}
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -355,7 +439,8 @@ export const SalesOrders = () => {
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
@@ -374,9 +459,9 @@ export const SalesOrders = () => {
               <TableRow>
                 <TableHead>Order #</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Room Type</TableHead>
-                <TableHead>Check-in</TableHead>
-                <TableHead>Check-out</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Order Date</TableHead>
+                <TableHead>Delivery Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Actions</TableHead>
@@ -392,13 +477,23 @@ export const SalesOrders = () => {
                       <div className="text-sm text-gray-500">{order.customerEmail}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{order.roomType}</TableCell>
-                  <TableCell>{order.checkInDate}</TableCell>
-                  <TableCell>{order.checkOutDate}</TableCell>
+                  <TableCell>{order.department}</TableCell>
+                  <TableCell>{order.orderDate}</TableCell>
+                  <TableCell>{order.deliveryDate}</TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell className="font-medium">${order.totalAmount}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrderForItem(order.id);
+                          setIsAddItemDialogOpen(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -425,95 +520,161 @@ export const SalesOrders = () => {
         </CardContent>
       </Card>
 
+      {/* Add Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Item to Order</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Item Name</Label>
+              <Input
+                value={newItem.name}
+                onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                placeholder="Enter item name"
+              />
+            </div>
+            <div>
+              <Label>Category</Label>
+              <Input
+                value={newItem.category}
+                onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                placeholder="Enter category"
+              />
+            </div>
+            <div>
+              <Label>Quantity</Label>
+              <Input
+                type="number"
+                value={newItem.quantity}
+                onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value) || 1})}
+                placeholder="Enter quantity"
+              />
+            </div>
+            <div>
+              <Label>Unit Price ($)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={newItem.unitPrice}
+                onChange={(e) => setNewItem({...newItem, unitPrice: parseFloat(e.target.value) || 0})}
+                placeholder="Enter unit price"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddItem}>Add Item</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Sales Order</DialogTitle>
           </DialogHeader>
           {editingOrder && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Customer Name</Label>
-                <Input
-                  value={editingOrder.customerName}
-                  onChange={(e) => setEditingOrder({...editingOrder, customerName: e.target.value})}
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Customer Name</Label>
+                  <Input
+                    value={editingOrder.customerName}
+                    onChange={(e) => setEditingOrder({...editingOrder, customerName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Customer Email</Label>
+                  <Input
+                    value={editingOrder.customerEmail}
+                    onChange={(e) => setEditingOrder({...editingOrder, customerEmail: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Customer Phone</Label>
+                  <Input
+                    value={editingOrder.customerPhone}
+                    onChange={(e) => setEditingOrder({...editingOrder, customerPhone: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select value={editingOrder.department} onValueChange={(value) => setEditingOrder({...editingOrder, department: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map(dept => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select 
+                    value={editingOrder.status} 
+                    onValueChange={(value: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled") => 
+                      setEditingOrder({...editingOrder, status: value})
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              {/* Items List */}
               <div>
-                <Label>Customer Email</Label>
-                <Input
-                  value={editingOrder.customerEmail}
-                  onChange={(e) => setEditingOrder({...editingOrder, customerEmail: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label>Customer Phone</Label>
-                <Input
-                  value={editingOrder.customerPhone}
-                  onChange={(e) => setEditingOrder({...editingOrder, customerPhone: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label>Room Type</Label>
-                <Select value={editingOrder.roomType} onValueChange={(value) => setEditingOrder({...editingOrder, roomType: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roomTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Check-in Date</Label>
-                <Input
-                  type="date"
-                  value={editingOrder.checkInDate}
-                  onChange={(e) => setEditingOrder({...editingOrder, checkInDate: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label>Check-out Date</Label>
-                <Input
-                  type="date"
-                  value={editingOrder.checkOutDate}
-                  onChange={(e) => setEditingOrder({...editingOrder, checkOutDate: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label>Total Amount ($)</Label>
-                <Input
-                  type="number"
-                  value={editingOrder.totalAmount}
-                  onChange={(e) => setEditingOrder({...editingOrder, totalAmount: parseFloat(e.target.value) || 0})}
-                />
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select 
-                  value={editingOrder.status} 
-                  onValueChange={(value) => setEditingOrder({...editingOrder, status: value as "pending" | "confirmed" | "completed" | "cancelled"})}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2">
-                <Label>Notes</Label>
-                <Input
-                  value={editingOrder.notes}
-                  onChange={(e) => setEditingOrder({...editingOrder, notes: e.target.value})}
-                />
+                <Label className="text-lg font-semibold">Order Items</Label>
+                <div className="border rounded-lg mt-2">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {editingOrder.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>${item.unitPrice}</TableCell>
+                          <TableCell className="font-medium">${item.totalPrice}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteItem(editingOrder.id, item.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
           )}
