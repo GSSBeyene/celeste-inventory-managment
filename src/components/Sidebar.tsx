@@ -1,4 +1,3 @@
-
 import { 
   LayoutDashboard, 
   Package, 
@@ -11,7 +10,8 @@ import {
   User,
   LogOut,
   FileText,
-  Truck
+  Truck,
+  Utensils
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
     { id: "sales", label: "Sales", icon: ShoppingCart },
     { id: "sales-orders", label: "Sales Orders", icon: FileText },
     { id: "purchasing-orders", label: "Purchase Orders", icon: Truck },
+    { id: "fnb", label: "Food & Beverage", icon: Utensils },
     { id: "alerts", label: "Stock Alerts", icon: AlertTriangle },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "settings", label: "Settings", icon: Settings },

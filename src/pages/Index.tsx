@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
@@ -9,6 +10,7 @@ import { Sales } from "@/components/Sales";
 import { Settings } from "@/components/Settings";
 import { SalesOrders } from "@/components/SalesOrders";
 import { PurchasingOrders } from "@/components/PurchasingOrders";
+import { FoodBeverage } from "@/components/FoodBeverage";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -37,6 +39,8 @@ const Index = () => {
         return <SalesOrders />;
       case "purchasing-orders":
         return <PurchasingOrders />;
+      case "fnb":
+        return <FoodBeverage />;
       case "settings":
         return <Settings />;
       default:
