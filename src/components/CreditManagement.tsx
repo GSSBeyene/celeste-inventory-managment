@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Plus, DollarSign, Users, Clock, Calendar } from 'lucide-react';
+import { CreditCard, Plus, DollarSign, Users, Clock, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CreditCustomer {
@@ -20,6 +19,7 @@ interface CreditCustomer {
   roomNumber?: string;
   creditLimit: number;
   currentBalance: number;
+  paidAmount: number;
   registrationDate: string;
   status: 'active' | 'suspended' | 'inactive';
 }
@@ -34,11 +34,20 @@ interface CreditTransaction {
   type: 'charge' | 'payment' | 'credit';
   date: string;
   staff: string;
+  paymentStatus: 'paid' | 'unpaid' | 'partial';
 }
 
 const serviceTypes = [
   'Restaurant & Bar',
   'Room Service',
+  'Alcoholic Beverages',
+  'Beer & Wine',
+  'Food & Dining',
+  'Coffee & Snacks',
+  'Breakfast Service',
+  'Lunch Service',
+  'Dinner Service',
+  'Room Accommodation',
   'Spa Services',
   'Laundry',
   'Mini Bar',
@@ -46,6 +55,13 @@ const serviceTypes = [
   'Transportation',
   'Gift Shop',
   'Recreation Activities',
+  'Swimming Pool',
+  'Gym & Fitness',
+  'Business Center',
+  'Parking Services',
+  'WiFi Premium',
+  'Late Check-out',
+  'Extra Cleaning',
   'Other Services'
 ];
 
@@ -59,6 +75,7 @@ export const CreditManagement = () => {
       roomNumber: '101',
       creditLimit: 1000,
       currentBalance: 250,
+      paidAmount: 150,
       registrationDate: '2024-01-15',
       status: 'active'
     },
@@ -70,6 +87,7 @@ export const CreditManagement = () => {
       roomNumber: '205',
       creditLimit: 1500,
       currentBalance: 750,
+      paidAmount: 0,
       registrationDate: '2024-01-18',
       status: 'active'
     }
@@ -85,36 +103,42 @@ export const CreditManagement = () => {
       amount: 85.50,
       type: 'charge',
       date: '2024-01-20',
-      staff: 'Mike Johnson'
+      staff: 'Mike Johnson',
+      paymentStatus: 'unpaid'
     },
     {
       id: '2',
       customerId: '1',
       customerName: 'John Smith',
-      serviceType: 'Room Service',
-      description: 'Breakfast delivery',
+      serviceType: 'Beer & Wine',
+      description: 'Premium beer selection',
       amount: 35.00,
       type: 'charge',
       date: '2024-01-21',
-      staff: 'Lisa Wong'
+      staff: 'Lisa Wong',
+      paymentStatus: 'paid'
     },
     {
       id: '3',
       customerId: '2',
       customerName: 'Sarah Johnson',
-      serviceType: 'Spa Services',
-      description: 'Full body massage',
+      serviceType: 'Alcoholic Beverages',
+      description: 'Cocktails at lobby bar',
       amount: 120.00,
       type: 'charge',
       date: '2024-01-21',
-      staff: 'Anna Davis'
+      staff: 'Anna Davis',
+      paymentStatus: 'unpaid'
     }
   ]);
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'customers' | 'transactions' | 'overview'>('overview');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [selectedTransactionId, setSelectedTransactionId] = useState('');
 
   const [newCustomer, setNewCustomer] = useState({
     name: '',
@@ -147,6 +171,7 @@ export const CreditManagement = () => {
       roomNumber: newCustomer.roomNumber,
       creditLimit: parseFloat(newCustomer.creditLimit),
       currentBalance: 0,
+      paidAmount: 0,
       registrationDate: new Date().toISOString().split('T')[0],
       status: 'active'
     };
@@ -179,7 +204,8 @@ export const CreditManagement = () => {
       amount: amount,
       type: newTransaction.type,
       date: new Date().toISOString().split('T')[0],
-      staff: newTransaction.staff
+      staff: newTransaction.staff,
+      paymentStatus: newTransaction.type === 'payment' ? 'paid' : 'unpaid'
     };
 
     setTransactions([...transactions, transaction]);
@@ -188,14 +214,18 @@ export const CreditManagement = () => {
     const updatedCustomers = customers.map(c => {
       if (c.id === newTransaction.customerId) {
         let newBalance = c.currentBalance;
+        let newPaidAmount = c.paidAmount;
+        
         if (newTransaction.type === 'charge') {
           newBalance += amount;
         } else if (newTransaction.type === 'payment') {
-          newBalance -= amount;
+          newPaidAmount += amount;
+          newBalance = Math.max(0, newBalance - amount);
         } else if (newTransaction.type === 'credit') {
           newBalance -= amount;
         }
-        return { ...c, currentBalance: Math.max(0, newBalance) };
+        
+        return { ...c, currentBalance: Math.max(0, newBalance), paidAmount: newPaidAmount };
       }
       return c;
     });
@@ -204,6 +234,64 @@ export const CreditManagement = () => {
     setNewTransaction({ customerId: '', serviceType: '', description: '', amount: '', type: 'charge', staff: '' });
     setIsAddTransactionOpen(false);
     toast.success('Transaction added successfully');
+  };
+
+  const handleMarkAsPaid = (transactionId: string) => {
+    setTransactions(transactions.map(t => 
+      t.id === transactionId 
+        ? { ...t, paymentStatus: 'paid' as const }
+        : t
+    ));
+    toast.success('Transaction marked as paid');
+  };
+
+  const handlePayment = () => {
+    if (!paymentAmount || !selectedCustomer) {
+      toast.error('Please enter payment amount');
+      return;
+    }
+
+    const amount = parseFloat(paymentAmount);
+    const customer = customers.find(c => c.id === selectedCustomer);
+    
+    if (!customer) {
+      toast.error('Customer not found');
+      return;
+    }
+
+    // Add payment transaction
+    const paymentTransaction: CreditTransaction = {
+      id: Date.now().toString(),
+      customerId: selectedCustomer,
+      customerName: customer.name,
+      serviceType: 'Payment',
+      description: `Payment received - $${amount}`,
+      amount: amount,
+      type: 'payment',
+      date: new Date().toISOString().split('T')[0],
+      staff: 'Front Desk',
+      paymentStatus: 'paid'
+    };
+
+    setTransactions([...transactions, paymentTransaction]);
+
+    // Update customer balance and paid amount
+    const updatedCustomers = customers.map(c => {
+      if (c.id === selectedCustomer) {
+        return { 
+          ...c, 
+          currentBalance: Math.max(0, c.currentBalance - amount),
+          paidAmount: c.paidAmount + amount
+        };
+      }
+      return c;
+    });
+
+    setCustomers(updatedCustomers);
+    setPaymentAmount('');
+    setSelectedCustomer('');
+    setIsPaymentDialogOpen(false);
+    toast.success('Payment processed successfully');
   };
 
   const getStatusBadge = (status: string) => {
@@ -224,8 +312,18 @@ export const CreditManagement = () => {
     return <Badge className={variants[type as keyof typeof variants]}>{type}</Badge>;
   };
 
+  const getPaymentStatusBadge = (status: string) => {
+    const variants = {
+      paid: 'bg-green-100 text-green-800',
+      unpaid: 'bg-red-100 text-red-800',
+      partial: 'bg-yellow-100 text-yellow-800'
+    };
+    return <Badge className={variants[status as keyof typeof variants]}>{status}</Badge>;
+  };
+
   const totalCreditIssued = customers.reduce((sum, customer) => sum + customer.creditLimit, 0);
   const totalOutstanding = customers.reduce((sum, customer) => sum + customer.currentBalance, 0);
+  const totalPaid = customers.reduce((sum, customer) => sum + customer.paidAmount, 0);
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter(c => c.status === 'active').length;
 
@@ -236,6 +334,51 @@ export const CreditManagement = () => {
           <h1 className="text-3xl font-bold tracking-tight">Credit Management</h1>
           <p className="text-muted-foreground">Manage customer credit accounts and service charges</p>
         </div>
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Process Payment
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Process Customer Payment</DialogTitle>
+              <DialogDescription>Record a payment from customer</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="paymentCustomer">Customer *</Label>
+                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.filter(c => c.currentBalance > 0).map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} - Balance: ${customer.currentBalance.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="paymentAmount">Payment Amount *</Label>
+                <Input
+                  id="paymentAmount"
+                  type="number"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Enter payment amount"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handlePayment}>Process Payment</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Navigation Tabs */}
@@ -266,7 +409,7 @@ export const CreditManagement = () => {
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Credit Issued</CardTitle>
@@ -282,7 +425,16 @@ export const CreditManagement = () => {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${totalOutstanding.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-red-600">${totalOutstanding.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">${totalPaid.toLocaleString()}</div>
               </CardContent>
             </Card>
             <Card>
@@ -319,12 +471,23 @@ export const CreditManagement = () => {
                       <p className="text-sm text-muted-foreground">{transaction.serviceType} - {transaction.description}</p>
                       <div className="flex items-center gap-2">
                         {getTransactionTypeBadge(transaction.type)}
+                        {getPaymentStatusBadge(transaction.paymentStatus)}
                         <span className="text-xs text-muted-foreground">{transaction.date}</span>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-bold">${transaction.amount.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">by {transaction.staff}</p>
+                      {transaction.paymentStatus === 'unpaid' && transaction.type === 'charge' && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="mt-1"
+                          onClick={() => handleMarkAsPaid(transaction.id)}
+                        >
+                          Mark Paid
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -416,7 +579,9 @@ export const CreditManagement = () => {
                     <TableHead>Contact</TableHead>
                     <TableHead>Room</TableHead>
                     <TableHead>Credit Limit</TableHead>
-                    <TableHead>Current Balance</TableHead>
+                    <TableHead>Outstanding</TableHead>
+                    <TableHead>Paid Amount</TableHead>
+                    <TableHead>Payment Status</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Registered</TableHead>
                   </TableRow>
@@ -433,8 +598,24 @@ export const CreditManagement = () => {
                       <TableCell>{customer.phone}</TableCell>
                       <TableCell>{customer.roomNumber || 'N/A'}</TableCell>
                       <TableCell>${customer.creditLimit.toLocaleString()}</TableCell>
-                      <TableCell className={customer.currentBalance > customer.creditLimit * 0.8 ? 'text-red-600 font-medium' : ''}>
+                      <TableCell className={customer.currentBalance > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
                         ${customer.currentBalance.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-green-600 font-medium">
+                        ${customer.paidAmount.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        {customer.currentBalance === 0 ? (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm">Paid</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-red-600">
+                            <XCircle className="h-4 w-4" />
+                            <span className="text-sm">Unpaid</span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>{getStatusBadge(customer.status)}</TableCell>
                       <TableCell>{customer.registrationDate}</TableCell>
@@ -554,7 +735,9 @@ export const CreditManagement = () => {
                     <TableHead>Description</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Payment Status</TableHead>
                     <TableHead>Staff</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -568,7 +751,19 @@ export const CreditManagement = () => {
                       <TableCell className={transaction.type === 'charge' ? 'text-red-600' : 'text-green-600'}>
                         {transaction.type === 'charge' ? '+' : '-'}${transaction.amount.toFixed(2)}
                       </TableCell>
+                      <TableCell>{getPaymentStatusBadge(transaction.paymentStatus)}</TableCell>
                       <TableCell>{transaction.staff}</TableCell>
+                      <TableCell>
+                        {transaction.paymentStatus === 'unpaid' && transaction.type === 'charge' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleMarkAsPaid(transaction.id)}
+                          >
+                            Mark Paid
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
