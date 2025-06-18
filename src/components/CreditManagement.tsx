@@ -8,8 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Plus, DollarSign, Users, Clock, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, Plus, DollarSign, Users, Clock, Calendar, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface CreditCustomer {
   id: string;
@@ -62,7 +63,7 @@ const serviceTypes = [
   'WiFi Premium',
   'Late Check-out',
   'Extra Cleaning',
-  'Other Services'
+  'Other'
 ];
 
 export const CreditManagement = () => {
@@ -139,6 +140,9 @@ export const CreditManagement = () => {
   const [activeTab, setActiveTab] = useState<'customers' | 'transactions' | 'overview'>('overview');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [selectedTransactionId, setSelectedTransactionId] = useState('');
+  const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<CreditCustomer | null>(null);
+  const [customServiceType, setCustomServiceType] = useState('');
 
   const [newCustomer, setNewCustomer] = useState({
     name: '',
@@ -292,6 +296,85 @@ export const CreditManagement = () => {
     setSelectedCustomer('');
     setIsPaymentDialogOpen(false);
     toast.success('Payment processed successfully');
+  };
+
+  const handleEditCustomer = (customer: CreditCustomer) => {
+    setEditingCustomer(customer);
+    setNewCustomer({
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      roomNumber: customer.roomNumber || '',
+      creditLimit: customer.creditLimit.toString()
+    });
+    setIsEditCustomerOpen(true);
+  };
+
+  const handleUpdateCustomer = () => {
+    if (!editingCustomer || !newCustomer.name || !newCustomer.email || !newCustomer.creditLimit) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    const updatedCustomers = customers.map(c => 
+      c.id === editingCustomer.id 
+        ? {
+            ...c,
+            name: newCustomer.name,
+            email: newCustomer.email,
+            phone: newCustomer.phone,
+            roomNumber: newCustomer.roomNumber,
+            creditLimit: parseFloat(newCustomer.creditLimit)
+          }
+        : c
+    );
+
+    // Update customer name in transactions
+    const updatedTransactions = transactions.map(t =>
+      t.customerId === editingCustomer.id
+        ? { ...t, customerName: newCustomer.name }
+        : t
+    );
+
+    setCustomers(updatedCustomers);
+    setTransactions(updatedTransactions);
+    setNewCustomer({ name: '', email: '', phone: '', roomNumber: '', creditLimit: '' });
+    setEditingCustomer(null);
+    setIsEditCustomerOpen(false);
+    toast.success('Customer updated successfully');
+  };
+
+  const handleDeleteCustomer = (customerId: string) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
+
+    if (customer.currentBalance > 0) {
+      toast.error('Cannot delete customer with outstanding balance');
+      return;
+    }
+
+    const hasTransactions = transactions.some(t => t.customerId === customerId);
+    if (hasTransactions) {
+      toast.error('Cannot delete customer with transaction history');
+      return;
+    }
+
+    setCustomers(customers.filter(c => c.id !== customerId));
+    toast.success('Customer deleted successfully');
+  };
+
+  const handleServiceTypeChange = (value: string) => {
+    if (value === 'Other') {
+      setCustomServiceType('');
+    }
+    setNewTransaction({ ...newTransaction, serviceType: value });
+  };
+
+  const getServiceTypeValue = () => {
+    if (newTransaction.serviceType === 'Other' && customServiceType) {
+      return customServiceType;
+    }
+    return newTransaction.serviceType;
   };
 
   const getStatusBadge = (status: string) => {
@@ -570,6 +653,68 @@ export const CreditManagement = () => {
             </Dialog>
           </div>
 
+          {/* Edit Customer Dialog */}
+          <Dialog open={isEditCustomerOpen} onOpenChange={setIsEditCustomerOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Customer</DialogTitle>
+                <DialogDescription>Update customer information</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="editName">Customer Name *</Label>
+                  <Input
+                    id="editName"
+                    value={newCustomer.name}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                    placeholder="Enter customer name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editEmail">Email *</Label>
+                  <Input
+                    id="editEmail"
+                    type="email"
+                    value={newCustomer.email}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editPhone">Phone</Label>
+                  <Input
+                    id="editPhone"
+                    value={newCustomer.phone}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editRoomNumber">Room Number</Label>
+                  <Input
+                    id="editRoomNumber"
+                    value={newCustomer.roomNumber}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, roomNumber: e.target.value })}
+                    placeholder="Enter room number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editCreditLimit">Credit Limit *</Label>
+                  <Input
+                    id="editCreditLimit"
+                    type="number"
+                    value={newCustomer.creditLimit}
+                    onChange={(e) => setNewCustomer({ ...newCustomer, creditLimit: e.target.value })}
+                    placeholder="Enter credit limit"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleUpdateCustomer}>Update Customer</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Card>
             <CardContent>
               <Table>
@@ -584,6 +729,7 @@ export const CreditManagement = () => {
                     <TableHead>Payment Status</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Registered</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -619,6 +765,45 @@ export const CreditManagement = () => {
                       </TableCell>
                       <TableCell>{getStatusBadge(customer.status)}</TableCell>
                       <TableCell>{customer.registrationDate}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditCustomer(customer)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={customer.currentBalance > 0 || transactions.some(t => t.customerId === customer.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete {customer.name}? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteCustomer(customer.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -676,7 +861,7 @@ export const CreditManagement = () => {
                   </div>
                   <div>
                     <Label htmlFor="serviceType">Service Type *</Label>
-                    <Select value={newTransaction.serviceType} onValueChange={(value) => setNewTransaction({ ...newTransaction, serviceType: value })}>
+                    <Select value={newTransaction.serviceType} onValueChange={handleServiceTypeChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select service type" />
                       </SelectTrigger>
@@ -687,6 +872,17 @@ export const CreditManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  {newTransaction.serviceType === 'Other' && (
+                    <div>
+                      <Label htmlFor="customServiceType">Custom Service Type *</Label>
+                      <Input
+                        id="customServiceType"
+                        value={customServiceType}
+                        onChange={(e) => setCustomServiceType(e.target.value)}
+                        placeholder="Enter custom service type"
+                      />
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="description">Description</Label>
                     <Textarea
