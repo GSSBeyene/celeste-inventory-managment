@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2, Upload, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface InventoryItem {
   unit: string;
   location: string;
   lastUpdated: string;
+  image?: string;
 }
 
 export const InventoryManager = () => {
@@ -25,13 +26,16 @@ export const InventoryManager = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     name: "",
     category: "rooms",
     currentStock: 0,
     minStock: 0,
     unit: "pieces",
-    location: ""
+    location: "",
+    image: ""
   });
 
   const categories = [
@@ -51,7 +55,7 @@ export const InventoryManager = () => {
       minStock: 50,
       unit: "pieces",
       location: "Linen Room A",
-      lastUpdated: "2 hours ago"
+      lastUpdated: "2 hours ago",
     },
     {
       id: 2,
@@ -61,7 +65,7 @@ export const InventoryManager = () => {
       minStock: 20,
       unit: "bottles",
       location: "Housekeeping Storage",
-      lastUpdated: "4 hours ago"
+      lastUpdated: "4 hours ago",
     },
     {
       id: 3,
@@ -71,7 +75,7 @@ export const InventoryManager = () => {
       minStock: 25,
       unit: "bottles",
       location: "Cleaning Supplies",
-      lastUpdated: "1 day ago"
+      lastUpdated: "1 day ago",
     },
     {
       id: 4,
@@ -81,7 +85,7 @@ export const InventoryManager = () => {
       minStock: 50,
       unit: "pods",
       location: "Minibar Storage",
-      lastUpdated: "6 hours ago"
+      lastUpdated: "6 hours ago",
     },
     {
       id: 5,
@@ -91,7 +95,7 @@ export const InventoryManager = () => {
       minStock: 15,
       unit: "pieces",
       location: "Maintenance Room",
-      lastUpdated: "3 days ago"
+      lastUpdated: "3 days ago",
     },
     {
       id: 6,
@@ -101,9 +105,39 @@ export const InventoryManager = () => {
       minStock: 30,
       unit: "sets",
       location: "Linen Room B",
-      lastUpdated: "1 day ago"
+      lastUpdated: "1 day ago",
     }
   ]);
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        if (isEdit && editingItem) {
+          setEditingItem({ ...editingItem, image: imageUrl });
+        } else {
+          setNewItem({ ...newItem, image: imageUrl });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (isEdit = false) => {
+    if (isEdit && editingItem) {
+      setEditingItem({ ...editingItem, image: "" });
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = "";
+      }
+    } else {
+      setNewItem({ ...newItem, image: "" });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   const handleAddItem = () => {
     if (!newItem.name || !newItem.location) {
@@ -128,9 +162,13 @@ export const InventoryManager = () => {
       currentStock: 0,
       minStock: 0,
       unit: "pieces",
-      location: ""
+      location: "",
+      image: ""
     });
     setIsAddItemOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
 
     toast({
       title: "Success",
@@ -183,7 +221,7 @@ export const InventoryManager = () => {
               Add New Item
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Inventory Item</DialogTitle>
               <DialogDescription>
@@ -200,6 +238,51 @@ export const InventoryManager = () => {
                   placeholder="Enter item name"
                 />
               </div>
+              
+              {/* Image Upload Section */}
+              <div>
+                <Label>Item Image</Label>
+                <div className="mt-2">
+                  {newItem.image ? (
+                    <div className="relative inline-block">
+                      <img 
+                        src={newItem.image} 
+                        alt="Item preview" 
+                        className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
+                        onClick={() => handleRemoveImage(false)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500 mb-2">Upload item image</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        Choose File
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, false)}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select value={newItem.category} onValueChange={(value) => setNewItem({...newItem, category: value})}>
@@ -214,6 +297,7 @@ export const InventoryManager = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="currentStock">Current Stock</Label>
@@ -321,6 +405,17 @@ export const InventoryManager = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Item Image */}
+                {item.image && (
+                  <div className="w-full h-32 mb-4">
+                    <img 
+                      src={item.image} 
+                      alt={item.name}
+                      className="w-full h-full object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Current Stock</p>
@@ -394,7 +489,7 @@ export const InventoryManager = () => {
       {/* Edit Item Dialog */}
       {editingItem && (
         <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Inventory Item</DialogTitle>
               <DialogDescription>
@@ -409,6 +504,51 @@ export const InventoryManager = () => {
                   onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
                 />
               </div>
+
+              {/* Image Upload Section for Edit */}
+              <div>
+                <Label>Item Image</Label>
+                <div className="mt-2">
+                  {editingItem.image ? (
+                    <div className="relative inline-block">
+                      <img 
+                        src={editingItem.image} 
+                        alt="Item preview" 
+                        className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full"
+                        onClick={() => handleRemoveImage(true)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500 mb-2">Upload item image</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => editFileInputRef.current?.click()}
+                      >
+                        Choose File
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, true)}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Current Stock</Label>
