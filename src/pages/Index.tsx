@@ -11,6 +11,7 @@ import { Settings } from "@/components/Settings";
 import { SalesOrders } from "@/components/SalesOrders";
 import { PurchasingOrders } from "@/components/PurchasingOrders";
 import { FoodBeverage } from "@/components/FoodBeverage";
+import { CreditManagement } from "@/components/CreditManagement";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -41,6 +42,8 @@ const Index = () => {
         return <PurchasingOrders />;
       case "fnb":
         return <FoodBeverage />;
+      case "credit":
+        return <CreditManagement />;
       case "settings":
         return <Settings />;
       default:
