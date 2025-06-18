@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard, Plus, DollarSign, Users, Clock, Calendar, CheckCircle, XCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface CreditCustomer {
   id: string;
@@ -149,7 +150,13 @@ export const CreditManagement = () => {
     email: '',
     phone: '',
     roomNumber: '',
-    creditLimit: ''
+    creditLimit: '',
+    initialCredit: '',
+    addInitialService: false,
+    serviceType: '',
+    serviceDescription: '',
+    serviceAmount: '',
+    customServiceType: ''
   });
 
   const [newTransaction, setNewTransaction] = useState({
@@ -167,6 +174,11 @@ export const CreditManagement = () => {
       return;
     }
 
+    if (newCustomer.addInitialService && (!newCustomer.serviceType || !newCustomer.serviceAmount)) {
+      toast.error('Please fill in service details or uncheck "Add Initial Service"');
+      return;
+    }
+
     const customer: CreditCustomer = {
       id: Date.now().toString(),
       name: newCustomer.name,
@@ -174,14 +186,56 @@ export const CreditManagement = () => {
       phone: newCustomer.phone,
       roomNumber: newCustomer.roomNumber,
       creditLimit: parseFloat(newCustomer.creditLimit),
-      currentBalance: 0,
+      currentBalance: parseFloat(newCustomer.initialCredit || '0'),
       paidAmount: 0,
       registrationDate: new Date().toISOString().split('T')[0],
       status: 'active'
     };
 
     setCustomers([...customers, customer]);
-    setNewCustomer({ name: '', email: '', phone: '', roomNumber: '', creditLimit: '' });
+
+    // Add initial service transaction if requested
+    if (newCustomer.addInitialService && newCustomer.serviceType && newCustomer.serviceAmount) {
+      const serviceType = newCustomer.serviceType === 'Other' && newCustomer.customServiceType 
+        ? newCustomer.customServiceType 
+        : newCustomer.serviceType;
+
+      const initialTransaction: CreditTransaction = {
+        id: (Date.now() + 1).toString(),
+        customerId: customer.id,
+        customerName: customer.name,
+        serviceType: serviceType,
+        description: newCustomer.serviceDescription || `Initial ${serviceType} service`,
+        amount: parseFloat(newCustomer.serviceAmount),
+        type: 'charge',
+        date: new Date().toISOString().split('T')[0],
+        staff: 'Registration',
+        paymentStatus: 'unpaid'
+      };
+
+      setTransactions(prev => [...prev, initialTransaction]);
+
+      // Update customer balance
+      const updatedCustomer = {
+        ...customer,
+        currentBalance: customer.currentBalance + parseFloat(newCustomer.serviceAmount)
+      };
+      setCustomers(prev => prev.map(c => c.id === customer.id ? updatedCustomer : c));
+    }
+
+    setNewCustomer({ 
+      name: '', 
+      email: '', 
+      phone: '', 
+      roomNumber: '', 
+      creditLimit: '',
+      initialCredit: '',
+      addInitialService: false,
+      serviceType: '',
+      serviceDescription: '',
+      serviceAmount: '',
+      customServiceType: ''
+    });
     setIsAddCustomerOpen(false);
     toast.success('Customer registered successfully');
   };
@@ -592,58 +646,141 @@ export const CreditManagement = () => {
                   Register Customer
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Register New Credit Customer</DialogTitle>
                   <DialogDescription>Add a new customer to the credit system</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Customer Name *</Label>
-                    <Input
-                      id="name"
-                      value={newCustomer.name}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                      placeholder="Enter customer name"
-                    />
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name">Customer Name *</Label>
+                      <Input
+                        id="name"
+                        value={newCustomer.name}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                        placeholder="Enter customer name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newCustomer.email}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                        placeholder="Enter email address"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newCustomer.email}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                      placeholder="Enter email address"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={newCustomer.phone}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="roomNumber">Room Number</Label>
+                      <Input
+                        id="roomNumber"
+                        value={newCustomer.roomNumber}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, roomNumber: e.target.value })}
+                        placeholder="Enter room number"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={newCustomer.phone}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                      placeholder="Enter phone number"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="creditLimit">Credit Limit *</Label>
+                      <Input
+                        id="creditLimit"
+                        type="number"
+                        value={newCustomer.creditLimit}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, creditLimit: e.target.value })}
+                        placeholder="Enter credit limit"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="initialCredit">Initial Credit Amount</Label>
+                      <Input
+                        id="initialCredit"
+                        type="number"
+                        step="0.01"
+                        value={newCustomer.initialCredit}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, initialCredit: e.target.value })}
+                        placeholder="Enter initial credit (optional)"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="roomNumber">Room Number</Label>
-                    <Input
-                      id="roomNumber"
-                      value={newCustomer.roomNumber}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, roomNumber: e.target.value })}
-                      placeholder="Enter room number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="creditLimit">Credit Limit *</Label>
-                    <Input
-                      id="creditLimit"
-                      type="number"
-                      value={newCustomer.creditLimit}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, creditLimit: e.target.value })}
-                      placeholder="Enter credit limit"
-                    />
+                  
+                  <div className="border-t pt-4">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <Checkbox
+                        id="addInitialService"
+                        checked={newCustomer.addInitialService}
+                        onCheckedChange={(checked) => setNewCustomer({ ...newCustomer, addInitialService: checked as boolean })}
+                      />
+                      <Label htmlFor="addInitialService">Add Initial Service Transaction</Label>
+                    </div>
+                    
+                    {newCustomer.addInitialService && (
+                      <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+                        <div>
+                          <Label htmlFor="serviceType">Service Type *</Label>
+                          <Select 
+                            value={newCustomer.serviceType} 
+                            onValueChange={(value) => setNewCustomer({ ...newCustomer, serviceType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select service type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {serviceTypes.map((service) => (
+                                <SelectItem key={service} value={service}>{service}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {newCustomer.serviceType === 'Other' && (
+                          <div>
+                            <Label htmlFor="customServiceType">Custom Service Type *</Label>
+                            <Input
+                              id="customServiceType"
+                              value={newCustomer.customServiceType}
+                              onChange={(e) => setNewCustomer({ ...newCustomer, customServiceType: e.target.value })}
+                              placeholder="Enter custom service type"
+                            />
+                          </div>
+                        )}
+                        
+                        <div>
+                          <Label htmlFor="serviceDescription">Service Description</Label>
+                          <Textarea
+                            id="serviceDescription"
+                            value={newCustomer.serviceDescription}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, serviceDescription: e.target.value })}
+                            placeholder="Enter service description"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="serviceAmount">Service Amount *</Label>
+                          <Input
+                            id="serviceAmount"
+                            type="number"
+                            step="0.01"
+                            value={newCustomer.serviceAmount}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, serviceAmount: e.target.value })}
+                            placeholder="Enter service amount"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
