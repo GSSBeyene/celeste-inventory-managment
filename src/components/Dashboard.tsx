@@ -7,11 +7,46 @@ import {
   Bed,
   Droplets,
   Coffee,
-  Wrench
+  Wrench,
+  ShoppingCart,
+  FileText,
+  ShoppingBag,
+  CreditCard,
+  Settings,
+  Lock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 export const Dashboard = () => {
+  const [userRole, setUserRole] = useState<string>("staff");
+  const [userPermissions, setUserPermissions] = useState({
+    inventory: false,
+    sales: false,
+    reports: false,
+    settings: false
+  });
+
+  useEffect(() => {
+    // Get user role and permissions from localStorage
+    const role = localStorage.getItem("userRole") || "staff";
+    const permissions = localStorage.getItem("userPermissions");
+    setUserRole(role);
+    if (permissions) {
+      setUserPermissions(JSON.parse(permissions));
+    } else {
+      // Default permissions based on role
+      if (role === "admin") {
+        setUserPermissions({ inventory: true, sales: true, reports: true, settings: true });
+      } else if (role === "manager") {
+        setUserPermissions({ inventory: true, sales: true, reports: true, settings: false });
+      } else {
+        setUserPermissions({ inventory: true, sales: false, reports: false, settings: false });
+      }
+    }
+  }, []);
+
   const stats = [
     {
       title: "Total Items",
@@ -19,7 +54,8 @@ export const Dashboard = () => {
       change: "+12%",
       icon: Package,
       color: "text-blue-600",
-      bgColor: "bg-blue-50"
+      bgColor: "bg-blue-50",
+      requiredPermission: "inventory"
     },
     {
       title: "Low Stock Items",
@@ -27,7 +63,8 @@ export const Dashboard = () => {
       change: "-8%",
       icon: AlertTriangle,
       color: "text-orange-600",
-      bgColor: "bg-orange-50"
+      bgColor: "bg-orange-50",
+      requiredPermission: "inventory"
     },
     {
       title: "Room Occupancy",
@@ -35,16 +72,57 @@ export const Dashboard = () => {
       change: "+5%",
       icon: Bed,
       color: "text-green-600",
-      bgColor: "bg-green-50"
+      bgColor: "bg-green-50",
+      requiredPermission: null
     },
     {
-      title: "Monthly Usage",
+      title: "Monthly Sales",
       value: "$12,450",
       change: "+18%",
       icon: TrendingUp,
       color: "text-purple-600",
-      bgColor: "bg-purple-50"
+      bgColor: "bg-purple-50",
+      requiredPermission: "sales"
     }
+  ];
+
+  const moduleAccess = [
+    { 
+      name: "Inventory Management", 
+      permission: "inventory", 
+      icon: Package, 
+      description: "Manage stock levels and items",
+      color: "bg-blue-500"
+    },
+    { 
+      name: "Sales & Orders", 
+      permission: "sales", 
+      icon: ShoppingCart, 
+      description: "Handle sales transactions",
+      color: "bg-green-500"
+    },
+    { 
+      name: "Reports & Analytics", 
+      permission: "reports", 
+      icon: FileText, 
+      description: "View business insights",
+      color: "bg-purple-500"
+    },
+    { 
+      name: "System Settings", 
+      permission: "settings", 
+      icon: Settings, 
+      description: "Configure system preferences",
+      color: "bg-red-500"
+    },
+  ];
+
+  const availableModules = [
+    { name: "Stock Alerts", icon: AlertTriangle, permission: "inventory" },
+    { name: "Sales Orders", icon: FileText, permission: "sales" },
+    { name: "Purchasing Orders", icon: ShoppingBag, permission: "inventory" },
+    { name: "Food & Beverage", icon: Coffee, permission: "inventory" },
+    { name: "Credit Management", icon: CreditCard, permission: "sales" },
   ];
 
   const categories = [
@@ -55,18 +133,37 @@ export const Dashboard = () => {
   ];
 
   const recentActivities = [
-    { action: "Stock Added", item: "Bath Towels (Premium)", quantity: 50, time: "2 hours ago" },
-    { action: "Low Stock Alert", item: "Shampoo Bottles", quantity: 8, time: "4 hours ago" },
-    { action: "Item Used", item: "Coffee Pods", quantity: -25, time: "6 hours ago" },
-    { action: "Stock Added", item: "Bed Sheets (King)", quantity: 30, time: "1 day ago" },
+    { action: "Stock Added", item: "Bath Towels (Premium)", quantity: 50, time: "2 hours ago", permission: "inventory" },
+    { action: "Low Stock Alert", item: "Shampoo Bottles", quantity: 8, time: "4 hours ago", permission: "inventory" },
+    { action: "Sale Completed", item: "Room Service Order", quantity: -1, time: "6 hours ago", permission: "sales" },
+    { action: "Stock Added", item: "Bed Sheets (King)", quantity: 30, time: "1 day ago", permission: "inventory" },
   ];
+
+  const hasPermission = (permission: string | null) => {
+    if (!permission) return true;
+    return userRole === "admin" || userPermissions[permission as keyof typeof userPermissions];
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "admin": return "bg-red-100 text-red-800";
+      case "manager": return "bg-blue-100 text-blue-800";
+      case "staff": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Hotel Celeste Inventory Overview</p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-gray-600">Hotel Celeste Inventory Overview</p>
+            <Badge className={getRoleBadgeColor(userRole)}>
+              {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+            </Badge>
+          </div>
         </div>
         <div className="flex items-center space-x-2 text-sm text-gray-500">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -74,9 +171,43 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Role-based Access Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            <span>Your Access Level</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {moduleAccess.map((module, index) => {
+              const Icon = module.icon;
+              const hasAccess = hasPermission(module.permission);
+              return (
+                <div key={index} className={`p-4 rounded-lg border-2 ${hasAccess ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 ${hasAccess ? module.color : 'bg-gray-400'} rounded-lg flex items-center justify-center`}>
+                      {hasAccess ? <Icon className="w-5 h-5 text-white" /> : <Lock className="w-5 h-5 text-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{module.name}</h3>
+                      <p className="text-sm text-gray-600">{module.description}</p>
+                      <Badge variant={hasAccess ? "default" : "destructive"} className="text-xs mt-1">
+                        {hasAccess ? "Accessible" : "Restricted"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Statistics Cards - filtered by permissions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => {
+        {stats.filter(stat => hasPermission(stat.requiredPermission)).map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
@@ -100,33 +231,36 @@ export const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Categories Overview */}
+        {/* Available Modules */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Package className="w-5 h-5 text-blue-600" />
-              <span>Inventory Categories</span>
+              <span>Available Modules</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {categories.map((category, index) => {
-              const Icon = category.icon;
+          <CardContent className="space-y-3">
+            {availableModules.map((module, index) => {
+              const Icon = module.icon;
+              const hasAccess = hasPermission(module.permission);
               return (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={index} className={`flex items-center justify-between p-3 rounded-lg transition-colors ${hasAccess ? 'hover:bg-gray-50 bg-white' : 'bg-gray-100'}`}>
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 ${category.color} rounded-lg flex items-center justify-center`}>
-                      <Icon className="w-5 h-5 text-white" />
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasAccess ? 'bg-blue-100' : 'bg-gray-300'}`}>
+                      {hasAccess ? <Icon className="w-4 h-4 text-blue-600" /> : <Lock className="w-4 h-4 text-gray-500" />}
                     </div>
-                    <span className="font-medium text-gray-900">{category.name}</span>
+                    <span className={`font-medium ${hasAccess ? 'text-gray-900' : 'text-gray-500'}`}>{module.name}</span>
                   </div>
-                  <span className="text-gray-600 font-medium">{category.count} items</span>
+                  <Badge variant={hasAccess ? "default" : "secondary"} className="text-xs">
+                    {hasAccess ? "Available" : "Restricted"}
+                  </Badge>
                 </div>
               );
             })}
           </CardContent>
         </Card>
 
-        {/* Recent Activities */}
+        {/* Recent Activities - filtered by permissions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -135,14 +269,15 @@ export const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivities.map((activity, index) => (
+            {recentActivities.filter(activity => hasPermission(activity.permission)).map((activity, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       activity.action === 'Stock Added' ? 'bg-green-100 text-green-700' :
                       activity.action === 'Low Stock Alert' ? 'bg-orange-100 text-orange-700' :
-                      'bg-blue-100 text-blue-700'
+                      activity.action === 'Sale Completed' ? 'bg-blue-100 text-blue-700' :
+                      'bg-purple-100 text-purple-700'
                     }`}>
                       {activity.action}
                     </span>
@@ -150,14 +285,52 @@ export const Dashboard = () => {
                   <p className="font-medium text-gray-900 mt-1">{activity.item}</p>
                   <p className="text-sm text-gray-500">{activity.time}</p>
                 </div>
-                <div className={`text-lg font-bold ${activity.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {activity.quantity > 0 ? '+' : ''}{activity.quantity}
+                <div className={`text-lg font-bold ${activity.quantity > 0 ? 'text-green-600' : activity.quantity < 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                  {activity.quantity > 0 ? '+' : ''}{activity.quantity === -1 ? '✓' : activity.quantity}
                 </div>
               </div>
             ))}
+            {recentActivities.filter(activity => hasPermission(activity.permission)).length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                <Lock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                <p>No activities available for your current permissions</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Inventory Categories - only show if user has inventory permission */}
+      {hasPermission("inventory") && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Package className="w-5 h-5 text-blue-600" />
+              <span>Inventory Categories</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {categories.map((category, index) => {
+                const Icon = category.icon;
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 ${category.color} rounded-lg flex items-center justify-center`}>
+                        <Icon className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-900">{category.name}</span>
+                        <p className="text-sm text-gray-600">{category.count} items</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
