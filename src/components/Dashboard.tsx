@@ -13,7 +13,8 @@ import {
   ShoppingBag,
   CreditCard,
   Settings,
-  Lock
+  Lock,
+  Key
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,11 @@ export const Dashboard = () => {
     inventory: false,
     sales: false,
     reports: false,
-    settings: false
+    settings: false,
+    purchasing: false,
+    fnb: false,
+    credit: false,
+    alerts: false
   });
 
   useEffect(() => {
@@ -38,11 +43,38 @@ export const Dashboard = () => {
     } else {
       // Default permissions based on role
       if (role === "admin") {
-        setUserPermissions({ inventory: true, sales: true, reports: true, settings: true });
+        setUserPermissions({ 
+          inventory: true, 
+          sales: true, 
+          reports: true, 
+          settings: true, 
+          purchasing: true, 
+          fnb: true, 
+          credit: true, 
+          alerts: true 
+        });
       } else if (role === "manager") {
-        setUserPermissions({ inventory: true, sales: true, reports: true, settings: false });
+        setUserPermissions({ 
+          inventory: true, 
+          sales: true, 
+          reports: true, 
+          settings: false, 
+          purchasing: true, 
+          fnb: true, 
+          credit: true, 
+          alerts: true 
+        });
       } else {
-        setUserPermissions({ inventory: true, sales: false, reports: false, settings: false });
+        setUserPermissions({ 
+          inventory: true, 
+          sales: false, 
+          reports: false, 
+          settings: false, 
+          purchasing: false, 
+          fnb: false, 
+          credit: false, 
+          alerts: true 
+        });
       }
     }
   }, []);
@@ -64,7 +96,7 @@ export const Dashboard = () => {
       icon: AlertTriangle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
-      requiredPermission: "inventory"
+      requiredPermission: "alerts"
     },
     {
       title: "Room Occupancy",
@@ -83,6 +115,33 @@ export const Dashboard = () => {
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       requiredPermission: "sales"
+    },
+    {
+      title: "Purchase Orders",
+      value: "156",
+      change: "+7%",
+      icon: ShoppingBag,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      requiredPermission: "purchasing"
+    },
+    {
+      title: "F&B Revenue",
+      value: "$8,340",
+      change: "+22%",
+      icon: Coffee,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      requiredPermission: "fnb"
+    },
+    {
+      title: "Credit Accounts",
+      value: "89",
+      change: "+5%",
+      icon: CreditCard,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      requiredPermission: "credit"
     }
   ];
 
@@ -102,6 +161,34 @@ export const Dashboard = () => {
       color: "bg-green-500"
     },
     { 
+      name: "Purchasing Orders", 
+      permission: "purchasing", 
+      icon: ShoppingBag, 
+      description: "Manage supplier orders",
+      color: "bg-indigo-500"
+    },
+    { 
+      name: "Food & Beverage", 
+      permission: "fnb", 
+      icon: Coffee, 
+      description: "F&B inventory and sales",
+      color: "bg-orange-500"
+    },
+    { 
+      name: "Credit Management", 
+      permission: "credit", 
+      icon: CreditCard, 
+      description: "Manage customer credit",
+      color: "bg-emerald-500"
+    },
+    { 
+      name: "Stock Alerts", 
+      permission: "alerts", 
+      icon: AlertTriangle, 
+      description: "Monitor stock alerts",
+      color: "bg-yellow-500"
+    },
+    { 
       name: "Reports & Analytics", 
       permission: "reports", 
       icon: FileText, 
@@ -118,11 +205,13 @@ export const Dashboard = () => {
   ];
 
   const availableModules = [
-    { name: "Stock Alerts", icon: AlertTriangle, permission: "inventory" },
+    { name: "Stock Alerts", icon: AlertTriangle, permission: "alerts" },
     { name: "Sales Orders", icon: FileText, permission: "sales" },
-    { name: "Purchasing Orders", icon: ShoppingBag, permission: "inventory" },
-    { name: "Food & Beverage", icon: Coffee, permission: "inventory" },
-    { name: "Credit Management", icon: CreditCard, permission: "sales" },
+    { name: "Purchasing Orders", icon: ShoppingBag, permission: "purchasing" },
+    { name: "Food & Beverage", icon: Coffee, permission: "fnb" },
+    { name: "Credit Management", icon: CreditCard, permission: "credit" },
+    { name: "User Management", icon: Users, permission: "settings" },
+    { name: "Password Management", icon: Key, permission: "settings" },
   ];
 
   const categories = [
@@ -134,8 +223,11 @@ export const Dashboard = () => {
 
   const recentActivities = [
     { action: "Stock Added", item: "Bath Towels (Premium)", quantity: 50, time: "2 hours ago", permission: "inventory" },
-    { action: "Low Stock Alert", item: "Shampoo Bottles", quantity: 8, time: "4 hours ago", permission: "inventory" },
+    { action: "Low Stock Alert", item: "Shampoo Bottles", quantity: 8, time: "4 hours ago", permission: "alerts" },
     { action: "Sale Completed", item: "Room Service Order", quantity: -1, time: "6 hours ago", permission: "sales" },
+    { action: "Purchase Order", item: "Coffee Supplies", quantity: 100, time: "8 hours ago", permission: "purchasing" },
+    { action: "F&B Sale", item: "Restaurant Order #1234", quantity: -1, time: "10 hours ago", permission: "fnb" },
+    { action: "Credit Added", item: "Customer Credit Top-up", quantity: 200, time: "12 hours ago", permission: "credit" },
     { action: "Stock Added", item: "Bed Sheets (King)", quantity: 30, time: "1 day ago", permission: "inventory" },
   ];
 
@@ -176,7 +268,7 @@ export const Dashboard = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Users className="w-5 h-5 text-blue-600" />
-            <span>Your Access Level</span>
+            <span>Your Access Level - All System Modules</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -236,7 +328,7 @@ export const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Package className="w-5 h-5 text-blue-600" />
-              <span>Available Modules</span>
+              <span>All Available Modules</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -265,7 +357,7 @@ export const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <TrendingUp className="w-5 h-5 text-green-600" />
-              <span>Recent Activities</span>
+              <span>Recent Activities (All Modules)</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -277,6 +369,9 @@ export const Dashboard = () => {
                       activity.action === 'Stock Added' ? 'bg-green-100 text-green-700' :
                       activity.action === 'Low Stock Alert' ? 'bg-orange-100 text-orange-700' :
                       activity.action === 'Sale Completed' ? 'bg-blue-100 text-blue-700' :
+                      activity.action === 'Purchase Order' ? 'bg-indigo-100 text-indigo-700' :
+                      activity.action === 'F&B Sale' ? 'bg-orange-100 text-orange-700' :
+                      activity.action === 'Credit Added' ? 'bg-emerald-100 text-emerald-700' :
                       'bg-purple-100 text-purple-700'
                     }`}>
                       {activity.action}
@@ -299,6 +394,34 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin-only Password Management Section */}
+      {userRole === "admin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Key className="w-5 h-5 text-red-600" />
+              <span>Admin Password Management</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                  <Key className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">Password Management Access</h3>
+                  <p className="text-sm text-gray-600">As an admin, you can reset passwords for all users in the Settings module</p>
+                  <Badge className="bg-red-100 text-red-800 text-xs mt-1">
+                    Admin Only Feature
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Inventory Categories - only show if user has inventory permission */}
       {hasPermission("inventory") && (
