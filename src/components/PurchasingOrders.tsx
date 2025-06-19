@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ interface PurchaseOrderItem {
   id: string;
   name: string;
   category: string;
+  materialType: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -62,6 +64,9 @@ interface PurchasingOrder {
   totalAmount: number;
   notes: string;
   department: string;
+  requestedPerson: string;
+  checkedPerson: string;
+  approvedPerson: string;
 }
 
 export const PurchasingOrders = () => {
@@ -87,12 +92,16 @@ export const PurchasingOrders = () => {
     tax: 0,
     totalAmount: 0,
     notes: "",
-    department: ""
+    department: "",
+    requestedPerson: "",
+    checkedPerson: "",
+    approvedPerson: ""
   });
 
   const [newItem, setNewItem] = useState<Omit<PurchaseOrderItem, "id" | "totalPrice">>({
     name: "",
     category: "",
+    materialType: "",
     quantity: 1,
     unitPrice: 0
   });
@@ -108,14 +117,17 @@ export const PurchasingOrders = () => {
       expectedDeliveryDate: "2024-01-22",
       status: "approved",
       items: [
-        { id: "1", name: "Bed Linens", category: "Housekeeping", quantity: 50, unitPrice: 25, totalPrice: 1250 },
-        { id: "2", name: "Towels", category: "Housekeeping", quantity: 100, unitPrice: 15, totalPrice: 1500 }
+        { id: "1", name: "Bed Linens", category: "Housekeeping", materialType: "Cotton", quantity: 50, unitPrice: 25, totalPrice: 1250 },
+        { id: "2", name: "Towels", category: "Housekeeping", materialType: "Terry Cloth", quantity: 100, unitPrice: 15, totalPrice: 1500 }
       ],
       subtotal: 2750,
       tax: 275,
       totalAmount: 3025,
       notes: "Bulk order for Q1",
-      department: "Housekeeping"
+      department: "Housekeeping",
+      requestedPerson: "Sarah Johnson",
+      checkedPerson: "Mike Wilson",
+      approvedPerson: "David Brown"
     }
   ]);
 
@@ -148,7 +160,10 @@ export const PurchasingOrders = () => {
       tax: 0,
       totalAmount: 0,
       notes: "",
-      department: ""
+      department: "",
+      requestedPerson: "",
+      checkedPerson: "",
+      approvedPerson: ""
     });
     setIsAddDialogOpen(false);
     toast({
@@ -204,6 +219,7 @@ export const PurchasingOrders = () => {
     setNewItem({
       name: "",
       category: "",
+      materialType: "",
       quantity: 1,
       unitPrice: 0
     });
@@ -242,6 +258,7 @@ export const PurchasingOrders = () => {
   };
 
   const departments = ["Housekeeping", "Kitchen", "Maintenance", "Front Desk", "Restaurant", "Spa", "General"];
+  const materialTypes = ["Cotton", "Polyester", "Terry Cloth", "Stainless Steel", "Plastic", "Glass", "Wood", "Ceramic", "Paper", "Other"];
 
   return (
     <div className="space-y-6">
@@ -298,6 +315,30 @@ export const PurchasingOrders = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Requested Person</Label>
+                <Input
+                  value={newOrder.requestedPerson}
+                  onChange={(e) => setNewOrder({...newOrder, requestedPerson: e.target.value})}
+                  placeholder="Enter requested person"
+                />
+              </div>
+              <div>
+                <Label>Checked Person</Label>
+                <Input
+                  value={newOrder.checkedPerson}
+                  onChange={(e) => setNewOrder({...newOrder, checkedPerson: e.target.value})}
+                  placeholder="Enter checked person"
+                />
+              </div>
+              <div>
+                <Label>Approved Person</Label>
+                <Input
+                  value={newOrder.approvedPerson}
+                  onChange={(e) => setNewOrder({...newOrder, approvedPerson: e.target.value})}
+                  placeholder="Enter approved person"
+                />
               </div>
               <div>
                 <Label>Order Date</Label>
@@ -460,8 +501,10 @@ export const PurchasingOrders = () => {
                 <TableHead>Order #</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Requested By</TableHead>
+                <TableHead>Checked By</TableHead>
+                <TableHead>Approved By</TableHead>
                 <TableHead>Order Date</TableHead>
-                <TableHead>Delivery Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Actions</TableHead>
@@ -478,8 +521,10 @@ export const PurchasingOrders = () => {
                     </div>
                   </TableCell>
                   <TableCell>{order.department}</TableCell>
+                  <TableCell>{order.requestedPerson}</TableCell>
+                  <TableCell>{order.checkedPerson}</TableCell>
+                  <TableCell>{order.approvedPerson}</TableCell>
                   <TableCell>{order.orderDate}</TableCell>
-                  <TableCell>{order.expectedDeliveryDate}</TableCell>
                   <TableCell>{getStatusBadge(order.status)}</TableCell>
                   <TableCell className="font-medium">${order.totalAmount}</TableCell>
                   <TableCell>
@@ -544,6 +589,19 @@ export const PurchasingOrders = () => {
               />
             </div>
             <div>
+              <Label>Material Type</Label>
+              <Select value={newItem.materialType} onValueChange={(value) => setNewItem({...newItem, materialType: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select material type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materialTypes.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label>Quantity</Label>
               <Input
                 type="number"
@@ -552,7 +610,7 @@ export const PurchasingOrders = () => {
                 placeholder="Enter quantity"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <Label>Unit Price ($)</Label>
               <Input
                 type="number"
@@ -616,6 +674,27 @@ export const PurchasingOrders = () => {
                   </Select>
                 </div>
                 <div>
+                  <Label>Requested Person</Label>
+                  <Input
+                    value={editingOrder.requestedPerson}
+                    onChange={(e) => setEditingOrder({...editingOrder, requestedPerson: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Checked Person</Label>
+                  <Input
+                    value={editingOrder.checkedPerson}
+                    onChange={(e) => setEditingOrder({...editingOrder, checkedPerson: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label>Approved Person</Label>
+                  <Input
+                    value={editingOrder.approvedPerson}
+                    onChange={(e) => setEditingOrder({...editingOrder, approvedPerson: e.target.value})}
+                  />
+                </div>
+                <div>
                   <Label>Status</Label>
                   <Select 
                     value={editingOrder.status} 
@@ -646,6 +725,7 @@ export const PurchasingOrders = () => {
                       <TableRow>
                         <TableHead>Item Name</TableHead>
                         <TableHead>Category</TableHead>
+                        <TableHead>Material Type</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Unit Price</TableHead>
                         <TableHead>Total</TableHead>
@@ -657,6 +737,7 @@ export const PurchasingOrders = () => {
                         <TableRow key={item.id}>
                           <TableCell>{item.name}</TableCell>
                           <TableCell>{item.category}</TableCell>
+                          <TableCell>{item.materialType}</TableCell>
                           <TableCell>{item.quantity}</TableCell>
                           <TableCell>${item.unitPrice}</TableCell>
                           <TableCell className="font-medium">${item.totalPrice}</TableCell>
