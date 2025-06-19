@@ -359,7 +359,13 @@ export const CreditManagement = () => {
       email: customer.email,
       phone: customer.phone,
       roomNumber: customer.roomNumber || '',
-      creditLimit: customer.creditLimit.toString()
+      creditLimit: customer.creditLimit.toString(),
+      initialCredit: '',
+      addInitialService: false,
+      serviceType: '',
+      serviceDescription: '',
+      serviceAmount: '',
+      customServiceType: ''
     });
     setIsEditCustomerOpen(true);
   };
@@ -392,7 +398,19 @@ export const CreditManagement = () => {
 
     setCustomers(updatedCustomers);
     setTransactions(updatedTransactions);
-    setNewCustomer({ name: '', email: '', phone: '', roomNumber: '', creditLimit: '' });
+    setNewCustomer({ 
+      name: '', 
+      email: '', 
+      phone: '', 
+      roomNumber: '', 
+      creditLimit: '',
+      initialCredit: '',
+      addInitialService: false,
+      serviceType: '',
+      serviceDescription: '',
+      serviceAmount: '',
+      customServiceType: ''
+    });
     setEditingCustomer(null);
     setIsEditCustomerOpen(false);
     toast.success('Customer updated successfully');
