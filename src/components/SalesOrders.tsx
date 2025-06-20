@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,10 @@ import {
   Star,
   Filter,
   ChefHat,
-  Utensils
+  Utensils,
+  Minus,
+  X,
+  Menu
 } from "lucide-react";
 
 interface MenuItem {
@@ -142,6 +144,7 @@ export const SalesOrders = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [orders, setOrders] = useState<Order[]>([
     {
@@ -299,16 +302,28 @@ export const SalesOrders = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <ChefHat className="h-8 w-8 text-orange-500" />
-              <h1 className="text-2xl font-bold text-gray-900">Food Order</h1>
+      {/* Mobile-First Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 md:h-16">
+            <div className="flex items-center space-x-3">
+              <ChefHat className="h-6 w-6 md:h-8 md:w-8 text-orange-500" />
+              <h1 className="text-lg md:text-2xl font-bold text-gray-900">Food Order</h1>
             </div>
             
-            <div className="flex items-center space-x-4">
+            {/* Mobile Menu Toggle */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-4">
               <Button
                 variant={activeView === "menu" ? "default" : "outline"}
                 onClick={() => setActiveView("menu")}
@@ -333,58 +348,108 @@ export const SalesOrders = () => {
                 >
                   <ShoppingCart className="w-4 h-4 mr-2" />
                   Cart ({cart.length})
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs">
+                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs min-w-5 h-5 flex items-center justify-center rounded-full">
                     {cart.reduce((sum, item) => sum + item.quantity, 0)}
                   </Badge>
                 </Button>
               )}
             </div>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t bg-white py-3 space-y-2">
+              <Button
+                variant={activeView === "menu" ? "default" : "outline"}
+                onClick={() => {
+                  setActiveView("menu");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center space-x-2"
+              >
+                <Utensils className="w-4 h-4" />
+                <span>Menu</span>
+              </Button>
+              <Button
+                variant={activeView === "orders" ? "default" : "outline"}
+                onClick={() => {
+                  setActiveView("orders");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center space-x-2"
+              >
+                <Package className="w-4 h-4" />
+                <span>Orders</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Fixed Cart Button for Mobile */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 md:hidden">
+          <Button
+            onClick={() => setIsCheckoutOpen(true)}
+            className="relative bg-orange-500 hover:bg-orange-600 shadow-lg h-14 w-14 rounded-full"
+            size="sm"
+          >
+            <ShoppingCart className="w-6 h-6" />
+            <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs min-w-6 h-6 flex items-center justify-center rounded-full">
+              {cart.reduce((sum, item) => sum + item.quantity, 0)}
+            </Badge>
+          </Button>
+        </div>
+      )}
+
+      <div className="px-4 sm:px-6 lg:px-8 py-4 md:py-8 pb-20 md:pb-8">
         {activeView === "menu" ? (
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {/* Menu Header */}
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Our Delicious Menu</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Our Delicious Menu</h2>
               <p className="text-gray-600">Fresh ingredients, expertly prepared</p>
             </div>
 
             {/* Search and Filters */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
+            <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
+              <div className="flex flex-col gap-4">
+                <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     placeholder="Search for dishes..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-12 text-base"
                   />
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {menuCategories.map((category) => (
-                    <Button
-                      key={category}
-                      variant={selectedCategory === category ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category)}
-                      className={selectedCategory === category ? "bg-orange-500 hover:bg-orange-600" : ""}
-                    >
-                      {category}
-                    </Button>
-                  ))}
+                
+                {/* Category Pills - Horizontal Scroll on Mobile */}
+                <div className="overflow-x-auto">
+                  <div className="flex gap-2 pb-2 min-w-max md:min-w-0 md:flex-wrap">
+                    {menuCategories.map((category) => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedCategory(category)}
+                        className={`whitespace-nowrap h-10 px-4 ${
+                          selectedCategory === category ? "bg-orange-500 hover:bg-orange-600" : ""
+                        }`}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Menu Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Menu Grid - Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredMenuItems.map((item) => (
                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="aspect-video bg-gray-200 flex items-center justify-center">
+                  <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center">
                     <img 
                       src={item.image} 
                       alt={item.name}
@@ -396,23 +461,23 @@ export const SalesOrders = () => {
                   </div>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-lg text-gray-900">{item.name}</h3>
-                      <div className="flex items-center space-x-1">
+                      <h3 className="font-semibold text-base md:text-lg text-gray-900 line-clamp-1">{item.name}</h3>
+                      <div className="flex items-center space-x-1 ml-2">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                         <span className="text-sm text-gray-600">{item.rating}</span>
                       </div>
                     </div>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-orange-500">${item.price}</span>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="w-4 h-4 mr-1" />
+                      <span className="text-xl md:text-2xl font-bold text-orange-500">${item.price}</span>
+                      <div className="flex items-center text-xs md:text-sm text-gray-500">
+                        <Clock className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                         {item.preparationTime}
                       </div>
                     </div>
                     <Button 
                       onClick={() => addToCart(item)}
-                      className="w-full bg-orange-500 hover:bg-orange-600"
+                      className="w-full bg-orange-500 hover:bg-orange-600 h-10 md:h-auto"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add to Cart
@@ -553,48 +618,62 @@ export const SalesOrders = () => {
         )}
       </div>
 
-      {/* Checkout Dialog */}
+      {/* Enhanced Mobile-Friendly Checkout Dialog */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Checkout</DialogTitle>
+        <DialogContent className="max-w-full md:max-w-2xl h-full md:h-auto md:max-h-[80vh] overflow-y-auto m-0 md:m-auto rounded-none md:rounded-lg">
+          <DialogHeader className="sticky top-0 bg-white z-10 pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl">Your Order</DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCheckoutOpen(false)}
+                className="md:hidden"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
           </DialogHeader>
-          <div className="space-y-6">
+          
+          <div className="space-y-6 p-1">
             {/* Cart Items */}
             <div>
-              <h3 className="font-semibold mb-4">Your Order</h3>
+              <h3 className="font-semibold mb-4 text-lg">Items ({cart.length})</h3>
               <div className="space-y-3">
                 {cart.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.menuItem.name}</h4>
+                  <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-base truncate">{item.menuItem.name}</h4>
                       <p className="text-sm text-gray-600">${item.menuItem.price} each</p>
                     </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 ml-4">
+                      <div className="flex items-center space-x-2 bg-white rounded-lg p-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                          className="h-8 w-8 p-0"
                         >
-                          -
+                          <Minus className="w-3 h-3" />
                         </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                          className="h-8 w-8 p-0"
                         >
-                          +
+                          <Plus className="w-3 h-3" />
                         </Button>
                       </div>
-                      <span className="font-medium w-20 text-right">${item.totalPrice.toFixed(2)}</span>
+                      <span className="font-medium w-16 text-right">${item.totalPrice.toFixed(2)}</span>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => removeFromCart(item.id)}
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
@@ -604,37 +683,40 @@ export const SalesOrders = () => {
 
             {/* Customer Information */}
             <div className="space-y-4">
-              <h3 className="font-semibold">Customer Information</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <h3 className="font-semibold text-lg">Contact Information</h3>
+              <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label>Name *</Label>
+                  <Label className="text-base">Name *</Label>
                   <Input
                     value={customerInfo.name}
                     onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
                     placeholder="Your name"
+                    className="h-12 text-base"
                   />
                 </div>
                 <div>
-                  <Label>Email *</Label>
+                  <Label className="text-base">Email *</Label>
                   <Input
                     type="email"
                     value={customerInfo.email}
                     onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
                     placeholder="your@email.com"
+                    className="h-12 text-base"
                   />
                 </div>
                 <div>
-                  <Label>Phone *</Label>
+                  <Label className="text-base">Phone *</Label>
                   <Input
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
                     placeholder="Your phone number"
+                    className="h-12 text-base"
                   />
                 </div>
                 <div>
-                  <Label>Order Type</Label>
+                  <Label className="text-base">Order Type</Label>
                   <Select value={customerInfo.orderType} onValueChange={(value: "dine-in" | "takeaway" | "delivery") => setCustomerInfo({...customerInfo, orderType: value})}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-12 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -648,66 +730,76 @@ export const SalesOrders = () => {
 
               {customerInfo.orderType === "dine-in" && (
                 <div>
-                  <Label>Table Number</Label>
+                  <Label className="text-base">Table Number</Label>
                   <Input
                     value={customerInfo.tableNumber}
                     onChange={(e) => setCustomerInfo({...customerInfo, tableNumber: e.target.value})}
                     placeholder="Table number"
+                    className="h-12 text-base"
                   />
                 </div>
               )}
 
               {customerInfo.orderType === "delivery" && (
                 <div>
-                  <Label>Delivery Address</Label>
+                  <Label className="text-base">Delivery Address</Label>
                   <Input
                     value={customerInfo.deliveryAddress}
                     onChange={(e) => setCustomerInfo({...customerInfo, deliveryAddress: e.target.value})}
                     placeholder="Full delivery address"
+                    className="h-12 text-base"
                   />
                 </div>
               )}
 
               <div>
-                <Label>Special Instructions</Label>
+                <Label className="text-base">Special Instructions</Label>
                 <Input
                   value={customerInfo.notes}
                   onChange={(e) => setCustomerInfo({...customerInfo, notes: e.target.value})}
                   placeholder="Any special requests..."
+                  className="h-12 text-base"
                 />
               </div>
             </div>
 
             {/* Order Summary */}
-            <div className="border-t pt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
+            <div className="border-t pt-4 bg-gray-50 p-4 rounded-lg">
+              <div className="space-y-3">
+                <div className="flex justify-between text-base">
                   <span>Subtotal:</span>
                   <span>${getCartTotal().toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between text-base">
                   <span>Tax (10%):</span>
                   <span>${(getCartTotal() * 0.1).toFixed(2)}</span>
                 </div>
                 {customerInfo.orderType === "delivery" && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-base">
                     <span>Delivery Fee:</span>
                     <span>$3.99</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <div className="flex justify-between font-bold text-xl border-t pt-3">
                   <span>Total:</span>
                   <span>${(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 3.99 : 0)).toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCheckoutOpen(false)}>
-                Cancel
+            <div className="flex flex-col md:flex-row gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCheckoutOpen(false)}
+                className="w-full md:w-auto h-12 text-base"
+              >
+                Continue Shopping
               </Button>
-              <Button onClick={handleCheckout} className="bg-orange-500 hover:bg-orange-600">
-                Place Order
+              <Button 
+                onClick={handleCheckout} 
+                className="w-full md:flex-1 bg-orange-500 hover:bg-orange-600 h-12 text-base font-semibold"
+              >
+                Place Order • ${(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 3.99 : 0)).toFixed(2)}
               </Button>
             </div>
           </div>
