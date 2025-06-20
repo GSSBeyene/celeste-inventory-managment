@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User, UserPlus, Edit3, Trash2, Shield, Settings as SettingsIcon, Eye, EyeOff } from "lucide-react";
+import { User, UserPlus, Edit3, Trash2, Shield, Settings as SettingsIcon, Eye, EyeOff, KeyRound } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -33,6 +33,9 @@ export const Settings = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<UserData | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
@@ -158,6 +161,27 @@ export const Settings = () => {
 
   const getStatusColor = (status: string) => {
     return status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800";
+  };
+
+  const handleResetPassword = () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (resetPasswordUser) {
+      toast({
+        title: "Success",
+        description: `Password reset successfully for ${resetPasswordUser.name}.`,
+      });
+      setNewPassword("");
+      setResetPasswordUser(null);
+      setShowResetPassword(false);
+    }
   };
 
   return (
@@ -353,6 +377,17 @@ export const Settings = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => {
+                                setResetPasswordUser(user);
+                                setShowResetPassword(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleDeleteUser(user.id)}
                               className="text-red-600 hover:text-red-700"
                             >
@@ -492,6 +527,60 @@ export const Settings = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Password Reset Dialog */}
+      <Dialog open={showResetPassword} onOpenChange={setShowResetPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {resetPasswordUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showResetPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min. 6 characters)"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowResetPassword(!showResetPassword)}
+                >
+                  {showResetPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowResetPassword(false);
+              setResetPasswordUser(null);
+              setNewPassword("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleResetPassword}>
+              Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
