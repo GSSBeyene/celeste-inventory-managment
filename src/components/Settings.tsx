@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { User, UserPlus, Edit3, Trash2, Shield, Settings as SettingsIcon } from "lucide-react";
+import { User, UserPlus, Edit3, Trash2, Shield, Settings as SettingsIcon, Eye, EyeOff } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -33,9 +32,11 @@ export const Settings = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     name: "",
     email: "",
+    password: "",
     role: "staff" as "admin" | "manager" | "staff",
     permissions: {
       inventory: false,
@@ -83,10 +84,19 @@ export const Settings = () => {
   }, []);
 
   const handleAddUser = () => {
-    if (!newUser.name || !newUser.email) {
+    if (!newUser.name || !newUser.email || !newUser.password) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields including password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
         variant: "destructive",
       });
       return;
@@ -94,7 +104,10 @@ export const Settings = () => {
 
     const user: UserData = {
       id: Date.now().toString(),
-      ...newUser,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      permissions: newUser.permissions,
       status: "active",
       lastLogin: "Never"
     };
@@ -103,6 +116,7 @@ export const Settings = () => {
     setNewUser({
       name: "",
       email: "",
+      password: "",
       role: "staff",
       permissions: { inventory: false, sales: false, reports: false, settings: false }
     });
@@ -110,7 +124,7 @@ export const Settings = () => {
 
     toast({
       title: "Success",
-      description: "User added successfully.",
+      description: "User added successfully with password set.",
     });
   };
 
@@ -208,6 +222,34 @@ export const Settings = () => {
                             onChange={(e) => setNewUser({...newUser, email: e.target.value})}
                             placeholder="Enter email address"
                           />
+                        </div>
+                        <div>
+                          <Label htmlFor="password">Password</Label>
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              value={newUser.password}
+                              onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                              placeholder="Enter password (min. 6 characters)"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Password must be at least 6 characters long
+                          </p>
                         </div>
                         <div>
                           <Label htmlFor="role">Role</Label>
