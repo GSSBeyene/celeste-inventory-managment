@@ -26,6 +26,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -143,8 +144,70 @@ export const SalesOrders = () => {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isOrderDetailsOpen, setIsOrderDetailsOpen] = useState(false);
+  const [isAddMenuItemOpen, setIsAddMenuItemOpen] = useState(false);
+  const [isEditMenuItemOpen, setIsEditMenuItemOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Editable menu items state
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([
+    {
+      id: "1",
+      name: "Grilled Salmon Teriyaki",
+      category: "Main Course",
+      price: 24.99,
+      description: "Fresh Atlantic salmon glazed with house teriyaki sauce, served with steamed rice and seasonal vegetables",
+      image: "/api/placeholder/300/200",
+      rating: 4.8,
+      preparationTime: "20-25 min",
+      available: true
+    },
+    {
+      id: "2",
+      name: "Truffle Mushroom Risotto",
+      category: "Main Course",
+      price: 22.50,
+      description: "Creamy arborio rice with wild mushrooms, truffle oil, and aged parmesan cheese",
+      image: "/api/placeholder/300/200",
+      rating: 4.6,
+      preparationTime: "25-30 min",
+      available: true
+    },
+    {
+      id: "3",
+      name: "Classic Caesar Salad",
+      category: "Appetizers",
+      price: 12.99,
+      description: "Crisp romaine lettuce, house-made croutons, aged parmesan, and classic caesar dressing",
+      image: "/api/placeholder/300/200",
+      rating: 4.5,
+      preparationTime: "5-10 min",
+      available: true
+    },
+    {
+      id: "4",
+      name: "Chocolate Lava Cake",
+      category: "Desserts",
+      price: 9.99,
+      description: "Warm chocolate cake with molten center, served with vanilla ice cream and berry compote",
+      image: "/api/placeholder/300/200",
+      rating: 4.9,
+      preparationTime: "15-20 min",
+      available: true
+    }
+  ]);
+
+  const [newMenuItem, setNewMenuItem] = useState<Partial<MenuItem>>({
+    name: "",
+    category: "Main Course",
+    price: 0,
+    description: "",
+    image: "/api/placeholder/300/200",
+    rating: 5.0,
+    preparationTime: "15-20 min",
+    available: true
+  });
 
   const [orders, setOrders] = useState<Order[]>([
     {
@@ -160,7 +223,7 @@ export const SalesOrders = () => {
       items: [
         {
           id: "item1",
-          menuItem: sampleMenuItems[0],
+          menuItem: menuItems[0],
           quantity: 2,
           totalPrice: 49.98
         }
@@ -184,7 +247,7 @@ export const SalesOrders = () => {
     notes: ""
   });
 
-  const filteredMenuItems = sampleMenuItems.filter(item => {
+  const filteredMenuItems = menuItems.filter(item => {
     const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -248,6 +311,80 @@ export const SalesOrders = () => {
     });
     
     setCart(updatedCart);
+  };
+
+  const handleAddMenuItem = () => {
+    if (!newMenuItem.name || !newMenuItem.price) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const item: MenuItem = {
+      id: Date.now().toString(),
+      name: newMenuItem.name!,
+      category: newMenuItem.category!,
+      price: newMenuItem.price!,
+      description: newMenuItem.description || "",
+      image: newMenuItem.image || "/api/placeholder/300/200",
+      rating: newMenuItem.rating || 5.0,
+      preparationTime: newMenuItem.preparationTime || "15-20 min",
+      available: newMenuItem.available ?? true
+    };
+
+    setMenuItems([...menuItems, item]);
+    setNewMenuItem({
+      name: "",
+      category: "Main Course",
+      price: 0,
+      description: "",
+      image: "/api/placeholder/300/200",
+      rating: 5.0,
+      preparationTime: "15-20 min",
+      available: true
+    });
+    setIsAddMenuItemOpen(false);
+
+    toast({
+      title: "Success",
+      description: "Menu item added successfully.",
+    });
+  };
+
+  const handleEditMenuItem = () => {
+    if (!selectedMenuItem || !selectedMenuItem.name || !selectedMenuItem.price) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedMenuItems = menuItems.map(item => 
+      item.id === selectedMenuItem.id ? selectedMenuItem : item
+    );
+    setMenuItems(updatedMenuItems);
+    setIsEditMenuItemOpen(false);
+    setSelectedMenuItem(null);
+
+    toast({
+      title: "Success",
+      description: "Menu item updated successfully.",
+    });
+  };
+
+  const handleDeleteMenuItem = (id: string) => {
+    const updatedMenuItems = menuItems.filter(item => item.id !== id);
+    setMenuItems(updatedMenuItems);
+    
+    toast({
+      title: "Success",
+      description: "Menu item deleted successfully.",
+    });
   };
 
   const getCartTotal = () => {
@@ -456,9 +593,18 @@ export const SalesOrders = () => {
         {activeView === "menu" ? (
           <div className="space-y-6 md:space-y-8">
             {/* Menu Header */}
-            <div className="text-center">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Our Delicious Menu</h2>
-              <p className="text-gray-600">Fresh ingredients, expertly prepared</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Our Delicious Menu</h2>
+                <p className="text-gray-600">Fresh ingredients, expertly prepared</p>
+              </div>
+              <Button
+                onClick={() => setIsAddMenuItemOpen(true)}
+                className="bg-orange-500 hover:bg-orange-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Item
+              </Button>
             </div>
 
             {/* Search and Filters */}
@@ -494,6 +640,76 @@ export const SalesOrders = () => {
                 </div>
               </div>
             </div>
+
+            {/* Menu Items Management Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Menu Items Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {menuItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {item.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>${item.price.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
+                            {item.rating}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.available ? "default" : "secondary"}>
+                            {item.available ? "Available" : "Unavailable"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedMenuItem(item);
+                                setIsEditMenuItemOpen(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteMenuItem(item.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
 
             {/* Menu Grid - Responsive */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -674,6 +890,169 @@ export const SalesOrders = () => {
           </div>
         )}
       </div>
+
+      {/* Add Menu Item Dialog */}
+      <Dialog open={isAddMenuItemOpen} onOpenChange={setIsAddMenuItemOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add New Menu Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Name *</Label>
+                <Input
+                  value={newMenuItem.name}
+                  onChange={(e) => setNewMenuItem({...newMenuItem, name: e.target.value})}
+                  placeholder="Item name"
+                />
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Select
+                  value={newMenuItem.category}
+                  onValueChange={(value) => setNewMenuItem({...newMenuItem, category: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Appetizers">Appetizers</SelectItem>
+                    <SelectItem value="Main Course">Main Course</SelectItem>
+                    <SelectItem value="Desserts">Desserts</SelectItem>
+                    <SelectItem value="Beverages">Beverages</SelectItem>
+                    <SelectItem value="Specials">Specials</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Price *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={newMenuItem.price}
+                  onChange={(e) => setNewMenuItem({...newMenuItem, price: parseFloat(e.target.value)})}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label>Preparation Time</Label>
+                <Input
+                  value={newMenuItem.preparationTime}
+                  onChange={(e) => setNewMenuItem({...newMenuItem, preparationTime: e.target.value})}
+                  placeholder="15-20 min"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={newMenuItem.description}
+                onChange={(e) => setNewMenuItem({...newMenuItem, description: e.target.value})}
+                placeholder="Describe the menu item..."
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsAddMenuItemOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddMenuItem} className="bg-orange-500 hover:bg-orange-600">
+                Add Item
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Menu Item Dialog */}
+      <Dialog open={isEditMenuItemOpen} onOpenChange={setIsEditMenuItemOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Menu Item</DialogTitle>
+          </DialogHeader>
+          {selectedMenuItem && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Name *</Label>
+                  <Input
+                    value={selectedMenuItem.name}
+                    onChange={(e) => setSelectedMenuItem({...selectedMenuItem, name: e.target.value})}
+                    placeholder="Item name"
+                  />
+                </div>
+                <div>
+                  <Label>Category</Label>
+                  <Select
+                    value={selectedMenuItem.category}
+                    onValueChange={(value) => setSelectedMenuItem({...selectedMenuItem, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Appetizers">Appetizers</SelectItem>
+                      <SelectItem value="Main Course">Main Course</SelectItem>
+                      <SelectItem value="Desserts">Desserts</SelectItem>
+                      <SelectItem value="Beverages">Beverages</SelectItem>
+                      <SelectItem value="Specials">Specials</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Price *</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={selectedMenuItem.price}
+                    onChange={(e) => setSelectedMenuItem({...selectedMenuItem, price: parseFloat(e.target.value)})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label>Preparation Time</Label>
+                  <Input
+                    value={selectedMenuItem.preparationTime}
+                    onChange={(e) => setSelectedMenuItem({...selectedMenuItem, preparationTime: e.target.value})}
+                    placeholder="15-20 min"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  value={selectedMenuItem.description}
+                  onChange={(e) => setSelectedMenuItem({...selectedMenuItem, description: e.target.value})}
+                  placeholder="Describe the menu item..."
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="available"
+                  checked={selectedMenuItem.available}
+                  onChange={(e) => setSelectedMenuItem({...selectedMenuItem, available: e.target.checked})}
+                />
+                <Label htmlFor="available">Available</Label>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsEditMenuItemOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditMenuItem} className="bg-orange-500 hover:bg-orange-600">
+                  Update Item
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced Mobile-Friendly Checkout Dialog */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
