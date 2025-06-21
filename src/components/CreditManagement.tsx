@@ -75,9 +75,9 @@ export const CreditManagement = () => {
       email: 'john.smith@email.com',
       phone: '+1-555-0123',
       roomNumber: '101',
-      creditLimit: 1000,
-      currentBalance: 250,
-      paidAmount: 150,
+      creditLimit: 50000,
+      currentBalance: 12500,
+      paidAmount: 7500,
       registrationDate: '2024-01-15',
       status: 'active'
     },
@@ -87,8 +87,8 @@ export const CreditManagement = () => {
       email: 'sarah.j@email.com',
       phone: '+1-555-0456',
       roomNumber: '205',
-      creditLimit: 1500,
-      currentBalance: 750,
+      creditLimit: 75000,
+      currentBalance: 37500,
       paidAmount: 0,
       registrationDate: '2024-01-18',
       status: 'active'
@@ -102,7 +102,7 @@ export const CreditManagement = () => {
       customerName: 'John Smith',
       serviceType: 'Restaurant & Bar',
       description: 'Dinner at hotel restaurant',
-      amount: 85.50,
+      amount: 4275,
       type: 'charge',
       date: '2024-01-20',
       staff: 'Mike Johnson',
@@ -114,7 +114,7 @@ export const CreditManagement = () => {
       customerName: 'John Smith',
       serviceType: 'Beer & Wine',
       description: 'Premium beer selection',
-      amount: 35.00,
+      amount: 1750,
       type: 'charge',
       date: '2024-01-21',
       staff: 'Lisa Wong',
@@ -126,7 +126,7 @@ export const CreditManagement = () => {
       customerName: 'Sarah Johnson',
       serviceType: 'Alcoholic Beverages',
       description: 'Cocktails at lobby bar',
-      amount: 120.00,
+      amount: 6000,
       type: 'charge',
       date: '2024-01-21',
       staff: 'Anna Davis',
@@ -323,7 +323,7 @@ export const CreditManagement = () => {
       customerId: selectedCustomer,
       customerName: customer.name,
       serviceType: 'Payment',
-      description: `Payment received - $${amount}`,
+      description: `Payment received - ETB ${amount}`,
       amount: amount,
       type: 'payment',
       date: new Date().toISOString().split('T')[0],
@@ -511,7 +511,7 @@ export const CreditManagement = () => {
                   <SelectContent>
                     {customers.filter(c => c.currentBalance > 0).map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} - Balance: ${customer.currentBalance.toFixed(2)}
+                        {customer.name} - Balance: ETB {customer.currentBalance.toFixed(2)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -571,7 +571,7 @@ export const CreditManagement = () => {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${totalCreditIssued.toLocaleString()}</div>
+                <div className="text-2xl font-bold">ETB {totalCreditIssued.toLocaleString()}</div>
               </CardContent>
             </Card>
             <Card>
@@ -580,7 +580,7 @@ export const CreditManagement = () => {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">${totalOutstanding.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-red-600">ETB {totalOutstanding.toLocaleString()}</div>
               </CardContent>
             </Card>
             <Card>
@@ -589,7 +589,7 @@ export const CreditManagement = () => {
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">${totalPaid.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">ETB {totalPaid.toLocaleString()}</div>
               </CardContent>
             </Card>
             <Card>
@@ -631,7 +631,7 @@ export const CreditManagement = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">${transaction.amount.toFixed(2)}</p>
+                      <p className="font-bold">ETB {transaction.amount.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">by {transaction.staff}</p>
                       {transaction.paymentStatus === 'unpaid' && transaction.type === 'charge' && (
                         <Button 
@@ -713,7 +713,7 @@ export const CreditManagement = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="creditLimit">Credit Limit *</Label>
+                      <Label htmlFor="creditLimit">Credit Limit (ETB) *</Label>
                       <Input
                         id="creditLimit"
                         type="number"
@@ -723,7 +723,7 @@ export const CreditManagement = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="initialCredit">Initial Credit Amount</Label>
+                      <Label htmlFor="initialCredit">Initial Credit Amount (ETB)</Label>
                       <Input
                         id="initialCredit"
                         type="number"
@@ -787,7 +787,7 @@ export const CreditManagement = () => {
                         </div>
                         
                         <div>
-                          <Label htmlFor="serviceAmount">Service Amount *</Label>
+                          <Label htmlFor="serviceAmount">Service Amount (ETB) *</Label>
                           <Input
                             id="serviceAmount"
                             type="number"
@@ -854,7 +854,7 @@ export const CreditManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="editCreditLimit">Credit Limit *</Label>
+                  <Label htmlFor="editCreditLimit">Credit Limit (ETB) *</Label>
                   <Input
                     id="editCreditLimit"
                     type="number"
@@ -898,12 +898,12 @@ export const CreditManagement = () => {
                       </TableCell>
                       <TableCell>{customer.phone}</TableCell>
                       <TableCell>{customer.roomNumber || 'N/A'}</TableCell>
-                      <TableCell>${customer.creditLimit.toLocaleString()}</TableCell>
+                      <TableCell>ETB {customer.creditLimit.toLocaleString()}</TableCell>
                       <TableCell className={customer.currentBalance > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
-                        ${customer.currentBalance.toLocaleString()}
+                        ETB {customer.currentBalance.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-green-600 font-medium">
-                        ${customer.paidAmount.toLocaleString()}
+                        ETB {customer.paidAmount.toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {customer.currentBalance === 0 ? (
@@ -1048,7 +1048,7 @@ export const CreditManagement = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="amount">Amount *</Label>
+                    <Label htmlFor="amount">Amount (ETB) *</Label>
                     <Input
                       id="amount"
                       type="number"
@@ -1100,7 +1100,7 @@ export const CreditManagement = () => {
                       <TableCell>{transaction.description}</TableCell>
                       <TableCell>{getTransactionTypeBadge(transaction.type)}</TableCell>
                       <TableCell className={transaction.type === 'charge' ? 'text-red-600' : 'text-green-600'}>
-                        {transaction.type === 'charge' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                        {transaction.type === 'charge' ? '+' : '-'}ETB {transaction.amount.toFixed(2)}
                       </TableCell>
                       <TableCell>{getPaymentStatusBadge(transaction.paymentStatus)}</TableCell>
                       <TableCell>{transaction.staff}</TableCell>

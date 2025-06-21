@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,14 +57,14 @@ export const FoodBeverage = () => {
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
 
-  // Sample menu items
+  // Sample menu items with ETB prices
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
       id: "1",
       name: "Grilled Salmon",
       category: "main",
-      price: 28.50,
-      cost: 12.00,
+      price: 1425.00,
+      cost: 600.00,
       description: "Fresh Atlantic salmon with herb butter and seasonal vegetables",
       available: true,
       ingredients: ["salmon", "herbs", "butter", "vegetables"],
@@ -76,8 +75,8 @@ export const FoodBeverage = () => {
       id: "2",
       name: "Caesar Salad",
       category: "appetizer",
-      price: 14.00,
-      cost: 5.50,
+      price: 700.00,
+      cost: 275.00,
       description: "Classic Caesar salad with romaine, parmesan, and croutons",
       available: true,
       ingredients: ["romaine", "parmesan", "croutons", "caesar dressing"],
@@ -88,8 +87,8 @@ export const FoodBeverage = () => {
       id: "3",
       name: "Chocolate Lava Cake",
       category: "dessert",
-      price: 12.00,
-      cost: 4.00,
+      price: 600.00,
+      cost: 200.00,
       description: "Warm chocolate cake with molten center and vanilla ice cream",
       available: true,
       ingredients: ["chocolate", "flour", "eggs", "vanilla ice cream"],
@@ -100,8 +99,8 @@ export const FoodBeverage = () => {
       id: "4",
       name: "House Wine",
       category: "beverage",
-      price: 8.00,
-      cost: 3.00,
+      price: 400.00,
+      cost: 150.00,
       description: "Premium red or white wine selection",
       available: true,
       ingredients: ["wine"],
@@ -110,7 +109,7 @@ export const FoodBeverage = () => {
     }
   ]);
 
-  // Sample orders
+  // Sample orders with ETB amounts
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "ORD001",
@@ -120,7 +119,7 @@ export const FoodBeverage = () => {
         { menuItem: menuItems[3], quantity: 1 }
       ],
       status: "preparing",
-      totalAmount: 65.00,
+      totalAmount: 3250.00,
       orderTime: "2024-01-15 19:30",
       customerName: "Smith Family"
     },
@@ -132,7 +131,7 @@ export const FoodBeverage = () => {
         { menuItem: menuItems[2], quantity: 2 }
       ],
       status: "ready",
-      totalAmount: 38.00,
+      totalAmount: 1900.00,
       orderTime: "2024-01-15 20:15"
     }
   ]);
@@ -250,7 +249,7 @@ export const FoodBeverage = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">ETB {totalRevenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Today's sales</p>
           </CardContent>
         </Card>
@@ -283,7 +282,7 @@ export const FoodBeverage = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${averageOrderValue.toFixed(2)}</div>
+            <div className="text-2xl font-bold">ETB {averageOrderValue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">Per order</p>
           </CardContent>
         </Card>
@@ -385,11 +384,11 @@ export const FoodBeverage = () => {
                           <span className="capitalize">{item.category}</span>
                         </div>
                       </TableCell>
-                      <TableCell>${item.price.toFixed(2)}</TableCell>
-                      <TableCell>${item.cost.toFixed(2)}</TableCell>
+                      <TableCell>ETB {item.price.toFixed(2)}</TableCell>
+                      <TableCell>ETB {item.cost.toFixed(2)}</TableCell>
                       <TableCell>
                         <span className="font-medium text-green-600">
-                          ${(item.price - item.cost).toFixed(2)}
+                          ETB {(item.price - item.cost).toFixed(2)}
                         </span>
                       </TableCell>
                       <TableCell>{item.preparationTime} min</TableCell>
@@ -478,7 +477,7 @@ export const FoodBeverage = () => {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell>ETB {order.totalAmount.toFixed(2)}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
                       <TableCell>{order.orderTime}</TableCell>
                       <TableCell>
@@ -554,7 +553,7 @@ export const FoodBeverage = () => {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($)</Label>
+                <Label htmlFor="price">Price (ETB)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -565,7 +564,7 @@ export const FoodBeverage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cost">Cost ($)</Label>
+                <Label htmlFor="cost">Cost (ETB)</Label>
                 <Input
                   id="cost"
                   type="number"
