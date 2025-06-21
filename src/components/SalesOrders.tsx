@@ -106,13 +106,13 @@ export const SalesOrders = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Initial menu items with placeholder images
+  // Initial menu items with ETB prices
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
       id: "1",
       name: "Grilled Salmon Teriyaki",
       category: "Main Course",
-      price: 24.99,
+      price: 1374.45, // Converted to ETB (24.99 * 55)
       description: "Fresh Atlantic salmon glazed with house teriyaki sauce, served with steamed rice and seasonal vegetables",
       image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=200&fit=crop",
       rating: 4.8,
@@ -123,7 +123,7 @@ export const SalesOrders = () => {
       id: "2",
       name: "Truffle Mushroom Risotto",
       category: "Main Course",
-      price: 22.50,
+      price: 1237.50, // Converted to ETB (22.50 * 55)
       description: "Creamy arborio rice with wild mushrooms, truffle oil, and aged parmesan cheese",
       image: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300&h=200&fit=crop",
       rating: 4.6,
@@ -134,7 +134,7 @@ export const SalesOrders = () => {
       id: "3",
       name: "Classic Caesar Salad",
       category: "Appetizers",
-      price: 12.99,
+      price: 714.45, // Converted to ETB (12.99 * 55)
       description: "Crisp romaine lettuce, house-made croutons, aged parmesan, and classic caesar dressing",
       image: "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=300&h=200&fit=crop",
       rating: 4.5,
@@ -145,7 +145,7 @@ export const SalesOrders = () => {
       id: "4",
       name: "Chocolate Lava Cake",
       category: "Desserts",
-      price: 9.99,
+      price: 549.45, // Converted to ETB (9.99 * 55)
       description: "Warm chocolate cake with molten center, served with vanilla ice cream and berry compote",
       image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&h=200&fit=crop",
       rating: 4.9,
@@ -183,7 +183,7 @@ export const SalesOrders = () => {
             id: "1",
             name: "Grilled Salmon Teriyaki",
             category: "Main Course",
-            price: 24.99,
+            price: 1374.45, // Converted to ETB
             description: "Fresh Atlantic salmon glazed with house teriyaki sauce",
             image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=200&fit=crop",
             rating: 4.8,
@@ -191,13 +191,13 @@ export const SalesOrders = () => {
             available: true
           },
           quantity: 2,
-          totalPrice: 49.98
+          totalPrice: 2748.90 // Converted to ETB
         }
       ],
-      subtotal: 49.98,
-      tax: 5.00,
+      subtotal: 2748.90,
+      tax: 274.89,
       deliveryFee: 0,
-      totalAmount: 54.98,
+      totalAmount: 3023.79,
       notes: "",
       tableNumber: "Table 5"
     }
@@ -394,7 +394,7 @@ export const SalesOrders = () => {
 
     const subtotal = getCartTotal();
     const tax = subtotal * 0.1;
-    const deliveryFee = customerInfo.orderType === "delivery" ? 3.99 : 0;
+    const deliveryFee = customerInfo.orderType === "delivery" ? 219.45 : 0; // 3.99 * 55 ETB
     const totalAmount = subtotal + tax + deliveryFee;
 
     const newOrder: Order = {
@@ -685,7 +685,7 @@ export const SalesOrders = () => {
                           </div>
                         </TableCell>
                         <TableCell>{item.category}</TableCell>
-                        <TableCell>${item.price.toFixed(2)}</TableCell>
+                        <TableCell>ETB {item.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex items-center">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
@@ -759,7 +759,7 @@ export const SalesOrders = () => {
                     </div>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xl md:text-2xl font-bold text-orange-500">${item.price}</span>
+                      <span className="text-xl md:text-2xl font-bold text-orange-500">ETB {item.price.toFixed(2)}</span>
                       <div className="flex items-center text-xs md:text-sm text-gray-500">
                         <Clock className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                         {item.preparationTime}
@@ -819,7 +819,7 @@ export const SalesOrders = () => {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${orders.reduce((sum, order) => sum + order.totalAmount, 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">ETB {orders.reduce((sum, order) => sum + order.totalAmount, 0).toFixed(2)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -858,7 +858,7 @@ export const SalesOrders = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>{order.items.length} items</TableCell>
-                        <TableCell className="font-medium">${order.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell className="font-medium">ETB {order.totalAmount.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(order.status)}>
                             {order.status}
@@ -952,7 +952,7 @@ export const SalesOrders = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Price *</Label>
+                <Label>Price (ETB) *</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -1065,7 +1065,7 @@ export const SalesOrders = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Price *</Label>
+                  <Label>Price (ETB) *</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -1176,7 +1176,7 @@ export const SalesOrders = () => {
                   <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-base truncate">{item.menuItem.name}</h4>
-                      <p className="text-sm text-gray-600">${item.menuItem.price} each</p>
+                      <p className="text-sm text-gray-600">ETB {item.menuItem.price.toFixed(2)} each</p>
                     </div>
                     <div className="flex items-center space-x-3 ml-4">
                       <div className="flex items-center space-x-2 bg-white rounded-lg p-1">
@@ -1198,7 +1198,7 @@ export const SalesOrders = () => {
                           <Plus className="w-3 h-3" />
                         </Button>
                       </div>
-                      <span className="font-medium w-16 text-right">${item.totalPrice.toFixed(2)}</span>
+                      <span className="font-medium w-20 text-right">ETB {item.totalPrice.toFixed(2)}</span>
                       <Button
                         size="sm"
                         variant="outline"
@@ -1300,21 +1300,21 @@ export const SalesOrders = () => {
               <div className="space-y-3">
                 <div className="flex justify-between text-base">
                   <span>Subtotal:</span>
-                  <span>${getCartTotal().toFixed(2)}</span>
+                  <span>ETB {getCartTotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base">
                   <span>Tax (10%):</span>
-                  <span>${(getCartTotal() * 0.1).toFixed(2)}</span>
+                  <span>ETB {(getCartTotal() * 0.1).toFixed(2)}</span>
                 </div>
                 {customerInfo.orderType === "delivery" && (
                   <div className="flex justify-between text-base">
                     <span>Delivery Fee:</span>
-                    <span>$3.99</span>
+                    <span>ETB 219.45</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-xl border-t pt-3">
                   <span>Total:</span>
-                  <span>${(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 3.99 : 0)).toFixed(2)}</span>
+                  <span>ETB {(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 219.45 : 0)).toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -1331,7 +1331,7 @@ export const SalesOrders = () => {
                 onClick={handleCheckout} 
                 className="w-full md:flex-1 bg-orange-500 hover:bg-orange-600 h-12 text-base font-semibold"
               >
-                Place Order • ${(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 3.99 : 0)).toFixed(2)}
+                Place Order • ETB {(getCartTotal() + (getCartTotal() * 0.1) + (customerInfo.orderType === "delivery" ? 219.45 : 0)).toFixed(2)}
               </Button>
             </div>
           </div>
@@ -1376,7 +1376,7 @@ export const SalesOrders = () => {
                   {selectedOrder.items.map((item) => (
                     <div key={item.id} className="flex justify-between p-2 bg-gray-50 rounded">
                       <span>{item.quantity}x {item.menuItem.name}</span>
-                      <span>${item.totalPrice.toFixed(2)}</span>
+                      <span>ETB {item.totalPrice.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -1385,7 +1385,7 @@ export const SalesOrders = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold">
                   <span>Total Amount:</span>
-                  <span>${selectedOrder.totalAmount.toFixed(2)}</span>
+                  <span>ETB {selectedOrder.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
