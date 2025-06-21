@@ -17,7 +17,8 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { 
   Select, 
@@ -44,7 +45,9 @@ import {
   Utensils,
   Minus,
   X,
-  Menu
+  Menu,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 
 interface MenuItem {
@@ -89,53 +92,6 @@ interface Order {
 
 const menuCategories = ["All", "Appetizers", "Main Course", "Desserts", "Beverages", "Specials"];
 
-const sampleMenuItems: MenuItem[] = [
-  {
-    id: "1",
-    name: "Grilled Salmon Teriyaki",
-    category: "Main Course",
-    price: 24.99,
-    description: "Fresh Atlantic salmon glazed with house teriyaki sauce, served with steamed rice and seasonal vegetables",
-    image: "/api/placeholder/300/200",
-    rating: 4.8,
-    preparationTime: "20-25 min",
-    available: true
-  },
-  {
-    id: "2",
-    name: "Truffle Mushroom Risotto",
-    category: "Main Course",
-    price: 22.50,
-    description: "Creamy arborio rice with wild mushrooms, truffle oil, and aged parmesan cheese",
-    image: "/api/placeholder/300/200",
-    rating: 4.6,
-    preparationTime: "25-30 min",
-    available: true
-  },
-  {
-    id: "3",
-    name: "Classic Caesar Salad",
-    category: "Appetizers",
-    price: 12.99,
-    description: "Crisp romaine lettuce, house-made croutons, aged parmesan, and classic caesar dressing",
-    image: "/api/placeholder/300/200",
-    rating: 4.5,
-    preparationTime: "5-10 min",
-    available: true
-  },
-  {
-    id: "4",
-    name: "Chocolate Lava Cake",
-    category: "Desserts",
-    price: 9.99,
-    description: "Warm chocolate cake with molten center, served with vanilla ice cream and berry compote",
-    image: "/api/placeholder/300/200",
-    rating: 4.9,
-    preparationTime: "15-20 min",
-    available: true
-  }
-];
-
 export const SalesOrders = () => {
   const { toast } = useToast();
   const [activeView, setActiveView] = useState<"menu" | "orders">("menu");
@@ -150,7 +106,7 @@ export const SalesOrders = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Editable menu items state
+  // Initial menu items with placeholder images
   const [menuItems, setMenuItems] = useState<MenuItem[]>([
     {
       id: "1",
@@ -158,7 +114,7 @@ export const SalesOrders = () => {
       category: "Main Course",
       price: 24.99,
       description: "Fresh Atlantic salmon glazed with house teriyaki sauce, served with steamed rice and seasonal vegetables",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=200&fit=crop",
       rating: 4.8,
       preparationTime: "20-25 min",
       available: true
@@ -169,7 +125,7 @@ export const SalesOrders = () => {
       category: "Main Course",
       price: 22.50,
       description: "Creamy arborio rice with wild mushrooms, truffle oil, and aged parmesan cheese",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=300&h=200&fit=crop",
       rating: 4.6,
       preparationTime: "25-30 min",
       available: true
@@ -180,7 +136,7 @@ export const SalesOrders = () => {
       category: "Appetizers",
       price: 12.99,
       description: "Crisp romaine lettuce, house-made croutons, aged parmesan, and classic caesar dressing",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1512852939750-1305098529bf?w=300&h=200&fit=crop",
       rating: 4.5,
       preparationTime: "5-10 min",
       available: true
@@ -191,7 +147,7 @@ export const SalesOrders = () => {
       category: "Desserts",
       price: 9.99,
       description: "Warm chocolate cake with molten center, served with vanilla ice cream and berry compote",
-      image: "/api/placeholder/300/200",
+      image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&h=200&fit=crop",
       rating: 4.9,
       preparationTime: "15-20 min",
       available: true
@@ -203,7 +159,7 @@ export const SalesOrders = () => {
     category: "Main Course",
     price: 0,
     description: "",
-    image: "/api/placeholder/300/200",
+    image: "",
     rating: 5.0,
     preparationTime: "15-20 min",
     available: true
@@ -223,7 +179,17 @@ export const SalesOrders = () => {
       items: [
         {
           id: "item1",
-          menuItem: menuItems[0],
+          menuItem: {
+            id: "1",
+            name: "Grilled Salmon Teriyaki",
+            category: "Main Course",
+            price: 24.99,
+            description: "Fresh Atlantic salmon glazed with house teriyaki sauce",
+            image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=300&h=200&fit=crop",
+            rating: 4.8,
+            preparationTime: "20-25 min",
+            available: true
+          },
           quantity: 2,
           totalPrice: 49.98
         }
@@ -329,23 +295,26 @@ export const SalesOrders = () => {
       category: newMenuItem.category!,
       price: newMenuItem.price!,
       description: newMenuItem.description || "",
-      image: newMenuItem.image || "/api/placeholder/300/200",
+      image: newMenuItem.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop",
       rating: newMenuItem.rating || 5.0,
       preparationTime: newMenuItem.preparationTime || "15-20 min",
       available: newMenuItem.available ?? true
     };
 
-    setMenuItems([...menuItems, item]);
+    setMenuItems(prevItems => [...prevItems, item]);
+    
+    // Reset form
     setNewMenuItem({
       name: "",
       category: "Main Course",
       price: 0,
       description: "",
-      image: "/api/placeholder/300/200",
+      image: "",
       rating: 5.0,
       preparationTime: "15-20 min",
       available: true
     });
+    
     setIsAddMenuItemOpen(false);
 
     toast({
@@ -384,6 +353,19 @@ export const SalesOrders = () => {
     toast({
       title: "Success",
       description: "Menu item deleted successfully.",
+    });
+  };
+
+  const toggleMenuItemAvailability = (id: string) => {
+    const updatedMenuItems = menuItems.map(item => 
+      item.id === id ? { ...item, available: !item.available } : item
+    );
+    setMenuItems(updatedMenuItems);
+    
+    const item = menuItems.find(item => item.id === id);
+    toast({
+      title: "Status Updated",
+      description: `${item?.name} is now ${item?.available ? 'unavailable' : 'available'}.`,
     });
   };
 
@@ -485,6 +467,22 @@ export const SalesOrders = () => {
       cancelled: "bg-red-100 text-red-800"
     };
     return colors[status];
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        if (isEdit && selectedMenuItem) {
+          setSelectedMenuItem({...selectedMenuItem, image: imageUrl});
+        } else {
+          setNewMenuItem({...newMenuItem, image: imageUrl});
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -650,6 +648,7 @@ export const SalesOrders = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Image</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Price</TableHead>
@@ -661,6 +660,22 @@ export const SalesOrders = () => {
                   <TableBody>
                     {menuItems.map((item) => (
                       <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                            {item.image ? (
+                              <img 
+                                src={item.image} 
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop";
+                                }}
+                              />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium">{item.name}</div>
@@ -678,9 +693,14 @@ export const SalesOrders = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={item.available ? "default" : "secondary"}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleMenuItemAvailability(item.id)}
+                            className={item.available ? "text-green-600" : "text-red-600"}
+                          >
                             {item.available ? "Available" : "Unavailable"}
-                          </Badge>
+                          </Button>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
@@ -715,15 +735,19 @@ export const SalesOrders = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {filteredMenuItems.map((item) => (
                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f3f4f6'/%3E%3Ctext x='150' y='100' text-anchor='middle' dy='.3em' fill='%236b7280'%3EFood Image%3C/text%3E%3C/svg%3E";
-                      }}
-                    />
+                  <div className="aspect-[4/3] bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {item.image ? (
+                      <img 
+                        src={item.image} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop";
+                        }}
+                      />
+                    ) : (
+                      <ImageIcon className="w-12 h-12 text-gray-400" />
+                    )}
                   </div>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -947,6 +971,42 @@ export const SalesOrders = () => {
               </div>
             </div>
             <div>
+              <Label>Image</Label>
+              <div className="flex items-center space-x-4">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, false)}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" className="cursor-pointer">
+                  <div className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Image</span>
+                  </div>
+                </label>
+                <Input
+                  value={newMenuItem.image}
+                  onChange={(e) => setNewMenuItem({...newMenuItem, image: e.target.value})}
+                  placeholder="Or enter image URL"
+                  className="flex-1"
+                />
+              </div>
+              {newMenuItem.image && (
+                <div className="mt-2">
+                  <img 
+                    src={newMenuItem.image} 
+                    alt="Preview" 
+                    className="w-20 h-20 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div>
               <Label>Description</Label>
               <Textarea
                 value={newMenuItem.description}
@@ -1022,6 +1082,42 @@ export const SalesOrders = () => {
                     placeholder="15-20 min"
                   />
                 </div>
+              </div>
+              <div>
+                <Label>Image</Label>
+                <div className="flex items-center space-x-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, true)}
+                    className="hidden"
+                    id="edit-image-upload"
+                  />
+                  <label htmlFor="edit-image-upload" className="cursor-pointer">
+                    <div className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Image</span>
+                    </div>
+                  </label>
+                  <Input
+                    value={selectedMenuItem.image}
+                    onChange={(e) => setSelectedMenuItem({...selectedMenuItem, image: e.target.value})}
+                    placeholder="Or enter image URL"
+                    className="flex-1"
+                  />
+                </div>
+                {selectedMenuItem.image && (
+                  <div className="mt-2">
+                    <img 
+                      src={selectedMenuItem.image} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Description</Label>
