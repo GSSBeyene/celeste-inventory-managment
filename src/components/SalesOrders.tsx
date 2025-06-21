@@ -157,7 +157,14 @@ export const SalesOrders = () => {
       deliveryTime: "7:30 PM",
       orderType: "dine-in",
       status: "preparing",
-      items: [],
+      items: [
+        {
+          id: "item1",
+          menuItem: sampleMenuItems[0],
+          quantity: 2,
+          totalPrice: 49.98
+        }
+      ],
       subtotal: 49.98,
       tax: 5.00,
       deliveryFee: 0,
@@ -185,17 +192,18 @@ export const SalesOrders = () => {
   });
 
   const addToCart = (menuItem: MenuItem) => {
-    const existingItem = cart.find(item => item.menuItem.id === menuItem.id);
+    console.log("Adding to cart:", menuItem.name);
     
-    if (existingItem) {
-      setCart(cart.map(item => 
-        item.menuItem.id === menuItem.id 
-          ? { ...item, quantity: item.quantity + 1, totalPrice: (item.quantity + 1) * menuItem.price }
-          : item
-      ));
+    const existingItemIndex = cart.findIndex(item => item.menuItem.id === menuItem.id);
+    
+    if (existingItemIndex >= 0) {
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex].quantity += 1;
+      updatedCart[existingItemIndex].totalPrice = updatedCart[existingItemIndex].quantity * menuItem.price;
+      setCart(updatedCart);
     } else {
       const newItem: OrderItem = {
-        id: Date.now().toString(),
+        id: `cart-${Date.now()}-${Math.random()}`,
         menuItem,
         quantity: 1,
         totalPrice: menuItem.price
@@ -210,20 +218,36 @@ export const SalesOrders = () => {
   };
 
   const removeFromCart = (itemId: string) => {
-    setCart(cart.filter(item => item.id !== itemId));
+    console.log("Removing from cart:", itemId);
+    const updatedCart = cart.filter(item => item.id !== itemId);
+    setCart(updatedCart);
+    
+    toast({
+      title: "Item removed",
+      description: "Item has been removed from your cart.",
+    });
   };
 
   const updateCartQuantity = (itemId: string, quantity: number) => {
-    if (quantity === 0) {
+    console.log("Updating quantity:", itemId, quantity);
+    
+    if (quantity <= 0) {
       removeFromCart(itemId);
       return;
     }
 
-    setCart(cart.map(item => 
-      item.id === itemId 
-        ? { ...item, quantity, totalPrice: quantity * item.menuItem.price }
-        : item
-    ));
+    const updatedCart = cart.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          quantity,
+          totalPrice: quantity * item.menuItem.price
+        };
+      }
+      return item;
+    });
+    
+    setCart(updatedCart);
   };
 
   const getCartTotal = () => {
@@ -255,7 +279,7 @@ export const SalesOrders = () => {
     const totalAmount = subtotal + tax + deliveryFee;
 
     const newOrder: Order = {
-      id: Date.now().toString(),
+      id: `order-${Date.now()}`,
       orderNumber: `ORD-${new Date().getFullYear()}-${String(orders.length + 1).padStart(3, '0')}`,
       customerName: customerInfo.name,
       customerEmail: customerInfo.email,
@@ -264,7 +288,7 @@ export const SalesOrders = () => {
       deliveryTime: new Date(Date.now() + 30 * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
       orderType: customerInfo.orderType,
       status: "pending",
-      items: cart,
+      items: [...cart],
       subtotal,
       tax,
       deliveryFee,
@@ -285,6 +309,32 @@ export const SalesOrders = () => {
     toast({
       title: "Order Placed Successfully!",
       description: `Order ${newOrder.orderNumber} has been confirmed.`,
+    });
+  };
+
+  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
+    console.log("Updating order status:", orderId, newStatus);
+    
+    const updatedOrders = orders.map(order => 
+      order.id === orderId ? { ...order, status: newStatus } : order
+    );
+    setOrders(updatedOrders);
+    
+    toast({
+      title: "Order Updated",
+      description: `Order status has been updated to ${newStatus}.`,
+    });
+  };
+
+  const deleteOrder = (orderId: string) => {
+    console.log("Deleting order:", orderId);
+    
+    const updatedOrders = orders.filter(order => order.id !== orderId);
+    setOrders(updatedOrders);
+    
+    toast({
+      title: "Order Deleted",
+      description: "Order has been successfully deleted.",
     });
   };
 
@@ -584,14 +634,13 @@ export const SalesOrders = () => {
                                 setIsOrderDetailsOpen(true);
                               }}
                             >
+                              <Edit className="w-3 h-3 mr-1" />
                               View
                             </Button>
                             <Select
                               value={order.status}
                               onValueChange={(value: Order['status']) => {
-                                setOrders(orders.map(o => 
-                                  o.id === order.id ? { ...o, status: value } : o
-                                ));
+                                updateOrderStatus(order.id, value);
                               }}
                             >
                               <SelectTrigger className="w-32">
@@ -606,6 +655,14 @@ export const SalesOrders = () => {
                                 <SelectItem value="cancelled">Cancelled</SelectItem>
                               </SelectContent>
                             </Select>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => deleteOrder(order.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
