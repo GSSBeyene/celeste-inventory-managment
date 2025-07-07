@@ -26,6 +26,14 @@ import {
   Lock
 } from "lucide-react";
 
+// Import food images
+import chickenSoupImg from "@/assets/chicken-soup.jpg";
+import mixedSaladImg from "@/assets/mixed-salad.jpg";
+import spaghettiTomatoImg from "@/assets/spaghetti-tomato.jpg";
+import grilledChickenImg from "@/assets/grilled-chicken.jpg";
+import orangeJuiceImg from "@/assets/orange-juice.jpg";
+import strawberryJuiceImg from "@/assets/strawberry-juice.jpg";
+
 interface MenuItem {
   id: string;
   name: string;
@@ -37,6 +45,7 @@ interface MenuItem {
   ingredients: string[];
   allergens: string[];
   preparationTime: number; // in minutes
+  image?: string; // Optional image for the menu item
 }
 
 interface Order {
@@ -76,7 +85,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "butter", "cream", "bread"],
       allergens: ["dairy", "gluten"],
-      preparationTime: 20
+      preparationTime: 20,
+      image: chickenSoupImg
     },
     {
       id: "2",
@@ -161,7 +171,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["lettuce", "onion", "tomato", "cucumber", "carrot", "chili", "bread"],
       allergens: ["gluten"],
-      preparationTime: 8
+      preparationTime: 8,
+      image: mixedSaladImg
     },
     {
       id: "9",
@@ -210,7 +221,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["spaghetti", "tomato sauce"],
       allergens: ["gluten"],
-      preparationTime: 20
+      preparationTime: 20,
+      image: spaghettiTomatoImg
     },
     {
       id: "13",
@@ -259,7 +271,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "rice", "marinade"],
       allergens: [],
-      preparationTime: 35
+      preparationTime: 35,
+      image: grilledChickenImg
     },
     {
       id: "17",
@@ -394,7 +407,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["orange"],
       allergens: [],
-      preparationTime: 3
+      preparationTime: 3,
+      image: orangeJuiceImg
     },
     {
       id: "28",
@@ -406,7 +420,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["strawberry"],
       allergens: [],
-      preparationTime: 5
+      preparationTime: 5,
+      image: strawberryJuiceImg
     },
     {
       id: "29",
@@ -738,6 +753,7 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
@@ -751,6 +767,19 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
                 <TableBody>
                   {filteredMenuItems.map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-lg shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <Utensils className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{item.name}</div>
