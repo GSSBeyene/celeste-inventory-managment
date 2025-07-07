@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "./UserManagement";
 import { 
   Plus, 
   Edit, 
@@ -21,7 +22,8 @@ import {
   TrendingUp,
   Users,
   DollarSign,
-  ChefHat
+  ChefHat,
+  Lock
 } from "lucide-react";
 
 interface MenuItem {
@@ -47,7 +49,11 @@ interface Order {
   customerName?: string;
 }
 
-export const FoodBeverage = () => {
+interface FoodBeverageProps {
+  currentUser?: User;
+}
+
+export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("menu");
   const [searchTerm, setSearchTerm] = useState("");
@@ -511,6 +517,15 @@ export const FoodBeverage = () => {
   });
 
   const handleAddItem = () => {
+    if (!currentUser?.permissions.canEditMenu) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to add menu items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!newItem.name || !newItem.price) {
       toast({
         title: "Error",
@@ -554,6 +569,15 @@ export const FoodBeverage = () => {
   };
 
   const handleDeleteItem = (id: string) => {
+    if (!currentUser?.permissions.canDeleteMenu) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to delete menu items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setMenuItems(menuItems.filter(item => item.id !== id));
     toast({
       title: "Success",
@@ -677,10 +701,12 @@ export const FoodBeverage = () => {
                   <CardTitle>Menu Items</CardTitle>
                   <CardDescription>Manage your restaurant menu and pricing</CardDescription>
                 </div>
-                <Button onClick={() => setIsAddItemDialogOpen(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Item
-                </Button>
+                {currentUser?.permissions.canEditMenu && (
+                  <Button onClick={() => setIsAddItemDialogOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Item
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -754,23 +780,36 @@ export const FoodBeverage = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedItem(item);
-                              setIsEditItemDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteItem(item.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {currentUser?.permissions.canUpdateMenu ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItem(item);
+                                setIsEditItemDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" disabled>
+                              <Lock className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {currentUser?.permissions.canDeleteMenu ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" disabled>
+                              <Lock className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

@@ -12,15 +12,35 @@ import { SalesOrders } from "@/components/SalesOrders";
 import { PurchasingOrders } from "@/components/PurchasingOrders";
 import { FoodBeverage } from "@/components/FoodBeverage";
 import { CreditManagement } from "@/components/CreditManagement";
+import { UserManagement, User } from "@/components/UserManagement";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("isAuthenticated");
     if (!isAuthenticated) {
       navigate("/auth");
+    } else {
+      // Set default admin user for demo purposes
+      setCurrentUser({
+        id: "1",
+        name: "Admin User",
+        email: "admin@celeste-hotel.com",
+        role: "admin",
+        status: "active",
+        permissions: {
+          canEditMenu: true,
+          canDeleteMenu: true,
+          canUpdateMenu: true,
+          canViewReports: true,
+          canManageOrders: true
+        },
+        createdAt: "2024-01-01",
+        lastLogin: "2024-01-15 09:30"
+      });
     }
   }, [navigate]);
 
@@ -41,9 +61,17 @@ const Index = () => {
       case "purchasing-orders":
         return <PurchasingOrders />;
       case "fnb":
-        return <FoodBeverage />;
+        return <FoodBeverage currentUser={currentUser} />;
       case "credit":
         return <CreditManagement />;
+      case "users":
+        return <UserManagement currentUser={currentUser} onUserUpdate={(users) => {
+          // Update current user if they edited themselves
+          const updatedCurrentUser = users.find(u => u.id === currentUser?.id);
+          if (updatedCurrentUser) {
+            setCurrentUser(updatedCurrentUser);
+          }
+        }} />;
       case "settings":
         return <Settings />;
       default:

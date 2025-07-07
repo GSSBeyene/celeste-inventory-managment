@@ -11,7 +11,8 @@ import {
   ShoppingBag,
   Coffee,
   Settings,
-  CreditCard
+  CreditCard,
+  UserCheck
 } from "lucide-react";
 
 const menuItems = [
@@ -24,6 +25,7 @@ const menuItems = [
   { id: "purchasing-orders", label: "Purchasing Orders", icon: ShoppingBag },
   { id: "fnb", label: "Food & Beverage", icon: Coffee },
   { id: "credit", label: "Credit Management", icon: CreditCard },
+  { id: "users", label: "User Management", icon: UserCheck },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
