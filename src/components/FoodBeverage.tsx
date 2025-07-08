@@ -34,6 +34,35 @@ import grilledChickenImg from "@/assets/grilled-chicken.jpg";
 import orangeJuiceImg from "@/assets/orange-juice.jpg";
 import strawberryJuiceImg from "@/assets/strawberry-juice.jpg";
 
+// Additional images for all menu items
+import mushroomSoupImg from "@/assets/mushroom-soup.jpg";
+import tomatoSoupImg from "@/assets/tomato-soup.jpg";
+import potatoSoupImg from "@/assets/potato-soup.jpg";
+import vegetableSoupImg from "@/assets/vegetable-soup.jpg";
+import specialSaladImg from "@/assets/special-salad.jpg";
+import chickenSaladImg from "@/assets/chicken-salad.jpg";
+import tunaSaladImg from "@/assets/tuna-salad.jpg";
+import fruitSaladImg from "@/assets/fruit-salad.jpg";
+import tomatoSaladImg from "@/assets/tomato-salad.jpg";
+import spaghettiVegetableImg from "@/assets/spaghetti-vegetable.jpg";
+import spaghettiTunaImg from "@/assets/spaghetti-tuna.jpg";
+import spaghettiMeatImg from "@/assets/spaghetti-meat.jpg";
+import stirFriedChickenImg from "@/assets/stir-fried-chicken.jpg";
+import roastedChickenImg from "@/assets/roasted-chicken.jpg";
+import friedChickenImg from "@/assets/fried-chicken.jpg";
+import roastedLambImg from "@/assets/roasted-lamb.jpg";
+import panFlakeImg from "@/assets/pan-flake.jpg";
+import vegetableSandwichImg from "@/assets/vegetable-sandwich.jpg";
+import tunaSandwichImg from "@/assets/tuna-sandwich.jpg";
+import chickenSandwichImg from "@/assets/chicken-sandwich.jpg";
+import frenchToastImg from "@/assets/french-toast.jpg";
+import milkshakeImg from "@/assets/milkshake.jpg";
+import papayaJuiceImg from "@/assets/papaya-juice.jpg";
+import mangoJuiceImg from "@/assets/mango-juice.jpg";
+import watermelonJuiceImg from "@/assets/watermelon-juice.jpg";
+import avocadoJuiceImg from "@/assets/avocado-juice.jpg";
+import specialJuiceMixImg from "@/assets/special-juice-mix.jpg";
+
 interface MenuItem {
   id: string;
   name: string;
@@ -98,7 +127,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["mushroom", "butter", "cream", "bread"],
       allergens: ["dairy", "gluten"],
-      preparationTime: 18
+      preparationTime: 18,
+      image: mushroomSoupImg
     },
     {
       id: "3",
@@ -110,7 +140,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["tomato", "butter", "cream", "bread"],
       allergens: ["dairy", "gluten"],
-      preparationTime: 15
+      preparationTime: 15,
+      image: tomatoSoupImg
     },
     {
       id: "4",
@@ -122,7 +153,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["potato", "onion", "butter", "cream", "bread"],
       allergens: ["dairy", "gluten"],
-      preparationTime: 25
+      preparationTime: 25,
+      image: potatoSoupImg
     },
     {
       id: "5",
@@ -134,7 +166,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["potato", "carrots", "green beans", "corn", "tomato", "bread"],
       allergens: ["gluten"],
-      preparationTime: 30
+      preparationTime: 30,
+      image: vegetableSoupImg
     },
     // Salads
     {
@@ -147,7 +180,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["lettuce", "chicken", "onion", "chili", "tomato", "cucumber", "tuna", "egg", "mayonnaise", "bread"],
       allergens: ["eggs", "gluten"],
-      preparationTime: 12
+      preparationTime: 12,
+      image: specialSaladImg
     },
     {
       id: "7",
@@ -159,7 +193,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "lettuce", "onion", "tomato", "chili", "cucumber", "bread"],
       allergens: ["gluten"],
-      preparationTime: 10
+      preparationTime: 10,
+      image: chickenSaladImg
     },
     {
       id: "8",
@@ -184,7 +219,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["lettuce", "tuna", "onion", "tomato", "cucumber", "bread"],
       allergens: ["fish", "gluten"],
-      preparationTime: 10
+      preparationTime: 10,
+      image: tunaSaladImg
     },
     {
       id: "10",
@@ -196,7 +232,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["strawberry", "orange", "apple", "mango", "papaya", "syrup"],
       allergens: [],
-      preparationTime: 8
+      preparationTime: 8,
+      image: fruitSaladImg
     },
     {
       id: "11",
@@ -208,7 +245,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["tomato", "onion", "chili", "black olive", "bread"],
       allergens: ["gluten"],
-      preparationTime: 5
+      preparationTime: 5,
+      image: tomatoSaladImg
     },
     // Main Courses - Pasta/Spaghetti
     {
@@ -234,7 +272,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["spaghetti", "mixed vegetables"],
       allergens: ["gluten"],
-      preparationTime: 25
+      preparationTime: 25,
+      image: spaghettiVegetableImg
     },
     {
       id: "14",
@@ -246,7 +285,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["spaghetti", "tuna", "sauce"],
       allergens: ["gluten", "fish"],
-      preparationTime: 22
+      preparationTime: 22,
+      image: spaghettiTunaImg
     },
     {
       id: "15",
@@ -258,7 +298,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["spaghetti", "meat", "sauce"],
       allergens: ["gluten"],
-      preparationTime: 30
+      preparationTime: 30,
+      image: spaghettiMeatImg
     },
     // Main Courses - Grilled/Fried
     {
@@ -284,7 +325,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "vegetables", "rice"],
       allergens: [],
-      preparationTime: 25
+      preparationTime: 25,
+      image: stirFriedChickenImg
     },
     {
       id: "18",
@@ -296,7 +338,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "rice", "marinade"],
       allergens: [],
-      preparationTime: 40
+      preparationTime: 40,
+      image: roastedChickenImg
     },
     {
       id: "19",
@@ -308,7 +351,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["chicken", "rice", "vegetables"],
       allergens: [],
-      preparationTime: 30
+      preparationTime: 30,
+      image: friedChickenImg
     },
     {
       id: "20",
@@ -320,7 +364,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["lamb", "rice", "vegetables", "brown sauce"],
       allergens: [],
-      preparationTime: 45
+      preparationTime: 45,
+      image: roastedLambImg
     },
     {
       id: "21",
@@ -332,7 +377,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["beef", "marinade"],
       allergens: [],
-      preparationTime: 35
+      preparationTime: 35,
+      image: panFlakeImg
     },
     // Sandwiches
     {
@@ -345,7 +391,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["bread", "cucumber", "tomato", "carrot"],
       allergens: ["gluten"],
-      preparationTime: 8
+      preparationTime: 8,
+      image: vegetableSandwichImg
     },
     {
       id: "23",
@@ -357,7 +404,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["bread", "tuna", "vegetables"],
       allergens: ["gluten", "fish"],
-      preparationTime: 10
+      preparationTime: 10,
+      image: tunaSandwichImg
     },
     {
       id: "24",
@@ -369,7 +417,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["bread", "chicken", "vegetables"],
       allergens: ["gluten"],
-      preparationTime: 12
+      preparationTime: 12,
+      image: chickenSandwichImg
     },
     // French Toast & Breakfast
     {
@@ -382,7 +431,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["bread", "eggs", "syrup"],
       allergens: ["gluten", "eggs", "dairy"],
-      preparationTime: 15
+      preparationTime: 15,
+      image: frenchToastImg
     },
     // Juices
     {
@@ -395,7 +445,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["strawberry", "honey", "milk"],
       allergens: ["dairy"],
-      preparationTime: 5
+      preparationTime: 5,
+      image: milkshakeImg
     },
     {
       id: "27",
@@ -433,7 +484,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["papaya"],
       allergens: [],
-      preparationTime: 4
+      preparationTime: 4,
+      image: papayaJuiceImg
     },
     {
       id: "30",
@@ -445,7 +497,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["mango"],
       allergens: [],
-      preparationTime: 5
+      preparationTime: 5,
+      image: mangoJuiceImg
     },
     {
       id: "31",
@@ -457,7 +510,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["watermelon"],
       allergens: [],
-      preparationTime: 3
+      preparationTime: 3,
+      image: watermelonJuiceImg
     },
     {
       id: "32",
@@ -469,7 +523,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["avocado"],
       allergens: [],
-      preparationTime: 5
+      preparationTime: 5,
+      image: avocadoJuiceImg
     },
     {
       id: "33",
@@ -481,7 +536,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       available: true,
       ingredients: ["strawberry", "avocado", "mango", "papaya"],
       allergens: [],
-      preparationTime: 8
+      preparationTime: 8,
+      image: specialJuiceMixImg
     }
   ]);
 
@@ -580,6 +636,31 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
     toast({
       title: "Success",
       description: "Menu item added successfully.",
+    });
+  };
+
+  const handleEditItem = () => {
+    if (!currentUser?.permissions.canUpdateMenu) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to update menu items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedItem) return;
+
+    const updatedItems = menuItems.map(item => 
+      item.id === selectedItem.id ? selectedItem : item
+    );
+    setMenuItems(updatedItems);
+    setSelectedItem(null);
+    setIsEditItemDialogOpen(false);
+
+    toast({
+      title: "Success",
+      description: "Menu item updated successfully.",
     });
   };
 
@@ -1024,6 +1105,103 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
               Cancel
             </Button>
             <Button onClick={handleAddItem}>Add Item</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditItemDialogOpen} onOpenChange={setIsEditItemDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Menu Item</DialogTitle>
+            <DialogDescription>
+              Update the details of this menu item.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedItem && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Item Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={selectedItem.name}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })}
+                    placeholder="Enter item name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select
+                    value={selectedItem.category}
+                    onValueChange={(value: MenuItem['category']) => 
+                      setSelectedItem({ ...selectedItem, category: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="appetizer">Appetizer</SelectItem>
+                      <SelectItem value="main">Main Course</SelectItem>
+                      <SelectItem value="dessert">Dessert</SelectItem>
+                      <SelectItem value="beverage">Beverage</SelectItem>
+                      <SelectItem value="special">Special</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price">Price (ETB)</Label>
+                  <Input
+                    id="edit-price"
+                    type="number"
+                    step="0.01"
+                    value={selectedItem.price}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, price: parseFloat(e.target.value) })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-cost">Cost (ETB)</Label>
+                  <Input
+                    id="edit-cost"
+                    type="number"
+                    step="0.01"
+                    value={selectedItem.cost}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, cost: parseFloat(e.target.value) })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-prepTime">Prep Time (min)</Label>
+                  <Input
+                    id="edit-prepTime"
+                    type="number"
+                    value={selectedItem.preparationTime}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, preparationTime: parseInt(e.target.value) })}
+                    placeholder="15"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={selectedItem.description}
+                  onChange={(e) => setSelectedItem({ ...selectedItem, description: e.target.value })}
+                  placeholder="Describe the menu item..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditItem}>Update Item</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
