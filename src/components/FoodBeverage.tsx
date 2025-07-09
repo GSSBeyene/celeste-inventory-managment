@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "./UserManagement";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
   Edit, 
@@ -23,7 +24,8 @@ import {
   Users,
   DollarSign,
   ChefHat,
-  Lock
+  Lock,
+  Loader2
 } from "lucide-react";
 
 // Import food images
@@ -73,8 +75,8 @@ interface MenuItem {
   available: boolean;
   ingredients: string[];
   allergens: string[];
-  preparationTime: number; // in minutes
-  image?: string; // Optional image for the menu item
+  preparation_time: number; // in minutes
+  image_url?: string; // Optional image for the menu item
 }
 
 interface Order {
@@ -91,6 +93,43 @@ interface FoodBeverageProps {
   currentUser?: User;
 }
 
+// Image mapping for existing menu items
+const imageMap: Record<string, string> = {
+  "Chicken Soup": chickenSoupImg,
+  "Mushroom Soup": mushroomSoupImg,
+  "Tomato Soup": tomatoSoupImg,
+  "Potato Soup": potatoSoupImg,
+  "Vegetable Soup": vegetableSoupImg,
+  "Special Salad": specialSaladImg,
+  "Chicken Salad": chickenSaladImg,
+  "Mixed Salad": mixedSaladImg,
+  "Tuna Salad": tunaSaladImg,
+  "Fruit Salad": fruitSaladImg,
+  "Tomato Salad": tomatoSaladImg,
+  "Spaghetti with Tomato Sauce": spaghettiTomatoImg,
+  "Spaghetti with Vegetable Sauce": spaghettiVegetableImg,
+  "Spaghetti with Tuna Sauce": spaghettiTunaImg,
+  "Spaghetti with Meat Sauce": spaghettiMeatImg,
+  "Grilled Chicken": grilledChickenImg,
+  "Stir Fried Chicken": stirFriedChickenImg,
+  "Roasted Chicken": roastedChickenImg,
+  "Fried Chicken": friedChickenImg,
+  "Roasted Lamb": roastedLambImg,
+  "Pan Flake": panFlakeImg,
+  "Vegetable Sandwich": vegetableSandwichImg,
+  "Tuna Sandwich": tunaSandwichImg,
+  "Chicken Sandwich": chickenSandwichImg,
+  "French Toast": frenchToastImg,
+  "Milk Shake Juice": milkshakeImg,
+  "Fresh Orange Juice": orangeJuiceImg,
+  "Fresh Strawberry Juice": strawberryJuiceImg,
+  "Fresh Papaya Juice": papayaJuiceImg,
+  "Fresh Mango Juice": mangoJuiceImg,
+  "Fresh Watermelon Juice": watermelonJuiceImg,
+  "Fresh Avocado Juice": avocadoJuiceImg,
+  "Special Juice Mix": specialJuiceMixImg,
+};
+
 export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("menu");
@@ -100,456 +139,15 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [isAddOrderDialogOpen, setIsAddOrderDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-
-  // Celeste Ethiopia Hotel menu items with ETB prices
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    // Soups
-    {
-      id: "1",
-      name: "Chicken Soup",
-      category: "appetizer",
-      price: 350.00,
-      cost: 120.00,
-      description: "Chicken, butter, cream served with bread",
-      available: true,
-      ingredients: ["chicken", "butter", "cream", "bread"],
-      allergens: ["dairy", "gluten"],
-      preparationTime: 20,
-      image: chickenSoupImg
-    },
-    {
-      id: "2",
-      name: "Mushroom Soup",
-      category: "appetizer",
-      price: 320.00,
-      cost: 110.00,
-      description: "Mushroom butter cream served with bread",
-      available: true,
-      ingredients: ["mushroom", "butter", "cream", "bread"],
-      allergens: ["dairy", "gluten"],
-      preparationTime: 18,
-      image: mushroomSoupImg
-    },
-    {
-      id: "3",
-      name: "Tomato Soup",
-      category: "appetizer",
-      price: 300.00,
-      cost: 100.00,
-      description: "Fresh tomato butter cream served with bread",
-      available: true,
-      ingredients: ["tomato", "butter", "cream", "bread"],
-      allergens: ["dairy", "gluten"],
-      preparationTime: 15,
-      image: tomatoSoupImg
-    },
-    {
-      id: "4",
-      name: "Potato Soup",
-      category: "appetizer",
-      price: 280.00,
-      cost: 95.00,
-      description: "Fresh potato, onion, butter cream served with bread",
-      available: true,
-      ingredients: ["potato", "onion", "butter", "cream", "bread"],
-      allergens: ["dairy", "gluten"],
-      preparationTime: 25,
-      image: potatoSoupImg
-    },
-    {
-      id: "5",
-      name: "Vegetable Soup",
-      category: "appetizer",
-      price: 320.00,
-      cost: 105.00,
-      description: "Fresh diced potato, carrots, green beans & corn simmered in tomato juice with bread",
-      available: true,
-      ingredients: ["potato", "carrots", "green beans", "corn", "tomato", "bread"],
-      allergens: ["gluten"],
-      preparationTime: 30,
-      image: vegetableSoupImg
-    },
-    // Salads
-    {
-      id: "6",
-      name: "Special Salad",
-      category: "appetizer",
-      price: 450.00,
-      cost: 180.00,
-      description: "Lettuce, chicken, onion, chili, tomato, cucumber, tuna, egg, mixed mayonnaise vinegar with bread",
-      available: true,
-      ingredients: ["lettuce", "chicken", "onion", "chili", "tomato", "cucumber", "tuna", "egg", "mayonnaise", "bread"],
-      allergens: ["eggs", "gluten"],
-      preparationTime: 12,
-      image: specialSaladImg
-    },
-    {
-      id: "7",
-      name: "Chicken Salad",
-      category: "appetizer",
-      price: 380.00,
-      cost: 150.00,
-      description: "Chicken, lettuce, onion, tomato, chili, cucumber with bread",
-      available: true,
-      ingredients: ["chicken", "lettuce", "onion", "tomato", "chili", "cucumber", "bread"],
-      allergens: ["gluten"],
-      preparationTime: 10,
-      image: chickenSaladImg
-    },
-    {
-      id: "8",
-      name: "Mixed Salad",
-      category: "appetizer",
-      price: 320.00,
-      cost: 120.00,
-      description: "Lettuce, onion, tomato, cucumber, carrot, chili with bread",
-      available: true,
-      ingredients: ["lettuce", "onion", "tomato", "cucumber", "carrot", "chili", "bread"],
-      allergens: ["gluten"],
-      preparationTime: 8,
-      image: mixedSaladImg
-    },
-    {
-      id: "9",
-      name: "Tuna Salad",
-      category: "appetizer",
-      price: 420.00,
-      cost: 160.00,
-      description: "Lettuce, tuna, onion, tomato, cucumber with bread",
-      available: true,
-      ingredients: ["lettuce", "tuna", "onion", "tomato", "cucumber", "bread"],
-      allergens: ["fish", "gluten"],
-      preparationTime: 10,
-      image: tunaSaladImg
-    },
-    {
-      id: "10",
-      name: "Fruit Salad",
-      category: "appetizer",
-      price: 350.00,
-      cost: 140.00,
-      description: "Fresh strawberry, orange, apple, mango, papaya with syrup",
-      available: true,
-      ingredients: ["strawberry", "orange", "apple", "mango", "papaya", "syrup"],
-      allergens: [],
-      preparationTime: 8,
-      image: fruitSaladImg
-    },
-    {
-      id: "11",
-      name: "Tomato Salad",
-      category: "appetizer",
-      price: 280.00,
-      cost: 110.00,
-      description: "Fresh tomato, onion, chili, black olive with bread",
-      available: true,
-      ingredients: ["tomato", "onion", "chili", "black olive", "bread"],
-      allergens: ["gluten"],
-      preparationTime: 5,
-      image: tomatoSaladImg
-    },
-    // Main Courses - Pasta/Spaghetti
-    {
-      id: "12",
-      name: "Spaghetti with Tomato Sauce",
-      category: "main",
-      price: 450.00,
-      cost: 180.00,
-      description: "Spaghetti served with rich tomato sauce",
-      available: true,
-      ingredients: ["spaghetti", "tomato sauce"],
-      allergens: ["gluten"],
-      preparationTime: 20,
-      image: spaghettiTomatoImg
-    },
-    {
-      id: "13",
-      name: "Spaghetti with Vegetable Sauce",
-      category: "main",
-      price: 480.00,
-      cost: 200.00,
-      description: "Spaghetti served with mixed vegetable sauce",
-      available: true,
-      ingredients: ["spaghetti", "mixed vegetables"],
-      allergens: ["gluten"],
-      preparationTime: 25,
-      image: spaghettiVegetableImg
-    },
-    {
-      id: "14",
-      name: "Spaghetti with Tuna Sauce",
-      category: "main",
-      price: 520.00,
-      cost: 220.00,
-      description: "Spaghetti served with tuna sauce",
-      available: true,
-      ingredients: ["spaghetti", "tuna", "sauce"],
-      allergens: ["gluten", "fish"],
-      preparationTime: 22,
-      image: spaghettiTunaImg
-    },
-    {
-      id: "15",
-      name: "Spaghetti with Meat Sauce",
-      category: "main",
-      price: 580.00,
-      cost: 250.00,
-      description: "Spaghetti served with meat sauce",
-      available: true,
-      ingredients: ["spaghetti", "meat", "sauce"],
-      allergens: ["gluten"],
-      preparationTime: 30,
-      image: spaghettiMeatImg
-    },
-    // Main Courses - Grilled/Fried
-    {
-      id: "16",
-      name: "Grilled Chicken",
-      category: "main",
-      price: 650.00,
-      cost: 280.00,
-      description: "Well marinated chicken thigh grilled & served with rice",
-      available: true,
-      ingredients: ["chicken", "rice", "marinade"],
-      allergens: [],
-      preparationTime: 35,
-      image: grilledChickenImg
-    },
-    {
-      id: "17",
-      name: "Stir Fried Chicken",
-      category: "main",
-      price: 620.00,
-      cost: 260.00,
-      description: "Fried cubes of chicken & cooked vegetable served with rice & prime",
-      available: true,
-      ingredients: ["chicken", "vegetables", "rice"],
-      allergens: [],
-      preparationTime: 25,
-      image: stirFriedChickenImg
-    },
-    {
-      id: "18",
-      name: "Roasted Chicken",
-      category: "main",
-      price: 680.00,
-      cost: 300.00,
-      description: "Well marinated chicken & served with rice & prime",
-      available: true,
-      ingredients: ["chicken", "rice", "marinade"],
-      allergens: [],
-      preparationTime: 40,
-      image: roastedChickenImg
-    },
-    {
-      id: "19",
-      name: "Fried Chicken",
-      category: "main",
-      price: 600.00,
-      cost: 250.00,
-      description: "Warmed chicken & served rice with vegetable",
-      available: true,
-      ingredients: ["chicken", "rice", "vegetables"],
-      allergens: [],
-      preparationTime: 30,
-      image: friedChickenImg
-    },
-    {
-      id: "20",
-      name: "Roasted Lamb",
-      category: "main",
-      price: 750.00,
-      cost: 350.00,
-      description: "Well marinated lamb served with brown sauce rice with vegetable",
-      available: true,
-      ingredients: ["lamb", "rice", "vegetables", "brown sauce"],
-      allergens: [],
-      preparationTime: 45,
-      image: roastedLambImg
-    },
-    {
-      id: "21",
-      name: "Pan Flake",
-      category: "main",
-      price: 720.00,
-      cost: 320.00,
-      description: "Well marinated beef fried",
-      available: true,
-      ingredients: ["beef", "marinade"],
-      allergens: [],
-      preparationTime: 35,
-      image: panFlakeImg
-    },
-    // Sandwiches
-    {
-      id: "22",
-      name: "Vegetable Sandwich",
-      category: "appetizer",
-      price: 280.00,
-      cost: 100.00,
-      description: "Bread stuffed with sliced cucumber, tomato & carrot",
-      available: true,
-      ingredients: ["bread", "cucumber", "tomato", "carrot"],
-      allergens: ["gluten"],
-      preparationTime: 8,
-      image: vegetableSandwichImg
-    },
-    {
-      id: "23",
-      name: "Tuna Sandwich",
-      category: "appetizer",
-      price: 350.00,
-      cost: 140.00,
-      description: "Tuna sandwich with fresh vegetables",
-      available: true,
-      ingredients: ["bread", "tuna", "vegetables"],
-      allergens: ["gluten", "fish"],
-      preparationTime: 10,
-      image: tunaSandwichImg
-    },
-    {
-      id: "24",
-      name: "Chicken Sandwich",
-      category: "appetizer",
-      price: 380.00,
-      cost: 160.00,
-      description: "Chicken sandwich with fresh vegetables",
-      available: true,
-      ingredients: ["bread", "chicken", "vegetables"],
-      allergens: ["gluten"],
-      preparationTime: 12,
-      image: chickenSandwichImg
-    },
-    // French Toast & Breakfast
-    {
-      id: "25",
-      name: "French Toast",
-      category: "special",
-      price: 320.00,
-      cost: 120.00,
-      description: "French toast with honey, chocolate or strawberry syrup",
-      available: true,
-      ingredients: ["bread", "eggs", "syrup"],
-      allergens: ["gluten", "eggs", "dairy"],
-      preparationTime: 15,
-      image: frenchToastImg
-    },
-    // Juices
-    {
-      id: "26",
-      name: "Milk Shake Juice",
-      category: "beverage",
-      price: 180.00,
-      cost: 60.00,
-      description: "Strawberry, honey, milk mix",
-      available: true,
-      ingredients: ["strawberry", "honey", "milk"],
-      allergens: ["dairy"],
-      preparationTime: 5,
-      image: milkshakeImg
-    },
-    {
-      id: "27",
-      name: "Fresh Orange Juice",
-      category: "beverage",
-      price: 150.00,
-      cost: 50.00,
-      description: "Fresh squeezed orange juice",
-      available: true,
-      ingredients: ["orange"],
-      allergens: [],
-      preparationTime: 3,
-      image: orangeJuiceImg
-    },
-    {
-      id: "28",
-      name: "Fresh Strawberry Juice",
-      category: "beverage",
-      price: 160.00,
-      cost: 55.00,
-      description: "Fresh strawberry juice",
-      available: true,
-      ingredients: ["strawberry"],
-      allergens: [],
-      preparationTime: 5,
-      image: strawberryJuiceImg
-    },
-    {
-      id: "29",
-      name: "Fresh Papaya Juice",
-      category: "beverage",
-      price: 140.00,
-      cost: 45.00,
-      description: "Fresh papaya juice",
-      available: true,
-      ingredients: ["papaya"],
-      allergens: [],
-      preparationTime: 4,
-      image: papayaJuiceImg
-    },
-    {
-      id: "30",
-      name: "Fresh Mango Juice",
-      category: "beverage",
-      price: 170.00,
-      cost: 60.00,
-      description: "Fresh mango juice",
-      available: true,
-      ingredients: ["mango"],
-      allergens: [],
-      preparationTime: 5,
-      image: mangoJuiceImg
-    },
-    {
-      id: "31",
-      name: "Fresh Watermelon Juice",
-      category: "beverage",
-      price: 130.00,
-      cost: 40.00,
-      description: "Fresh watermelon juice",
-      available: true,
-      ingredients: ["watermelon"],
-      allergens: [],
-      preparationTime: 3,
-      image: watermelonJuiceImg
-    },
-    {
-      id: "32",
-      name: "Fresh Avocado Juice",
-      category: "beverage",
-      price: 180.00,
-      cost: 65.00,
-      description: "Fresh avocado juice",
-      available: true,
-      ingredients: ["avocado"],
-      allergens: [],
-      preparationTime: 5,
-      image: avocadoJuiceImg
-    },
-    {
-      id: "33",
-      name: "Special Juice Mix",
-      category: "beverage",
-      price: 200.00,
-      cost: 75.00,
-      description: "Fresh strawberry, avocado, mango and papaya mix",
-      available: true,
-      ingredients: ["strawberry", "avocado", "mango", "papaya"],
-      allergens: [],
-      preparationTime: 8,
-      image: specialJuiceMixImg
-    }
-  ]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Sample orders with ETB amounts
   const [orders, setOrders] = useState<Order[]>([
     {
       id: "ORD001",
       tableNumber: "Table 5",
-      items: [
-        { menuItem: menuItems[0], quantity: 2 },
-        { menuItem: menuItems[3], quantity: 1 }
-      ],
+      items: [],
       status: "preparing",
       totalAmount: 3250.00,
       orderTime: "2024-01-15 19:30",
@@ -558,10 +156,7 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
     {
       id: "ORD002",
       tableNumber: "Table 12",
-      items: [
-        { menuItem: menuItems[1], quantity: 1 },
-        { menuItem: menuItems[2], quantity: 2 }
-      ],
+      items: [],
       status: "ready",
       totalAmount: 1900.00,
       orderTime: "2024-01-15 20:15"
@@ -577,8 +172,44 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
     available: true,
     ingredients: [],
     allergens: [],
-    preparationTime: 15
+    preparation_time: 15
   });
+
+  // Load menu items from database
+  useEffect(() => {
+    const loadMenuItems = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('menu_items')
+          .select('*')
+          .order('name');
+
+        if (error) {
+          console.error('Error loading menu items:', error);
+          toast({
+            title: "Error",
+            description: "Failed to load menu items.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setMenuItems((data || []) as MenuItem[]);
+      } catch (err) {
+        console.error('Error:', err);
+        toast({
+          title: "Error",
+          description: "Failed to load menu items.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMenuItems();
+  }, []);
 
   const filteredMenuItems = menuItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -587,7 +218,7 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!currentUser?.permissions.canEditMenu) {
       toast({
         title: "Access Denied",
@@ -606,40 +237,62 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       return;
     }
 
-    const item: MenuItem = {
-      id: Date.now().toString(),
-      name: newItem.name!,
-      category: newItem.category as MenuItem['category'],
-      price: newItem.price!,
-      cost: newItem.cost || 0,
-      description: newItem.description || "",
-      available: newItem.available ?? true,
-      ingredients: newItem.ingredients || [],
-      allergens: newItem.allergens || [],
-      preparationTime: newItem.preparationTime || 15
-    };
+    try {
+      const { data, error } = await supabase
+        .from('menu_items')
+        .insert([{
+          name: newItem.name!,
+          category: newItem.category as MenuItem['category'],
+          price: newItem.price!,
+          cost: newItem.cost || 0,
+          description: newItem.description || "",
+          available: newItem.available ?? true,
+          ingredients: newItem.ingredients || [],
+          allergens: newItem.allergens || [],
+          preparation_time: newItem.preparation_time || 15
+        }])
+        .select()
+        .single();
 
-    setMenuItems([...menuItems, item]);
-    setNewItem({
-      name: "",
-      category: "main",
-      price: 0,
-      cost: 0,
-      description: "",
-      available: true,
-      ingredients: [],
-      allergens: [],
-      preparationTime: 15
-    });
-    setIsAddItemDialogOpen(false);
+      if (error) {
+        console.error('Error adding menu item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to add menu item.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    toast({
-      title: "Success",
-      description: "Menu item added successfully.",
-    });
+      setMenuItems([...menuItems, data as MenuItem]);
+      setNewItem({
+        name: "",
+        category: "main",
+        price: 0,
+        cost: 0,
+        description: "",
+        available: true,
+        ingredients: [],
+        allergens: [],
+        preparation_time: 15
+      });
+      setIsAddItemDialogOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Menu item added successfully.",
+      });
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to add menu item.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditItem = () => {
+  const handleEditItem = async () => {
     if (!currentUser?.permissions.canUpdateMenu) {
       toast({
         title: "Access Denied",
@@ -651,20 +304,54 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
 
     if (!selectedItem) return;
 
-    const updatedItems = menuItems.map(item => 
-      item.id === selectedItem.id ? selectedItem : item
-    );
-    setMenuItems(updatedItems);
-    setSelectedItem(null);
-    setIsEditItemDialogOpen(false);
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .update({
+          name: selectedItem.name,
+          category: selectedItem.category,
+          price: selectedItem.price,
+          cost: selectedItem.cost,
+          description: selectedItem.description,
+          available: selectedItem.available,
+          ingredients: selectedItem.ingredients,
+          allergens: selectedItem.allergens,
+          preparation_time: selectedItem.preparation_time
+        })
+        .eq('id', selectedItem.id);
 
-    toast({
-      title: "Success",
-      description: "Menu item updated successfully.",
-    });
+      if (error) {
+        console.error('Error updating menu item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update menu item.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updatedItems = menuItems.map(item => 
+        item.id === selectedItem.id ? selectedItem : item
+      );
+      setMenuItems(updatedItems);
+      setSelectedItem(null);
+      setIsEditItemDialogOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Menu item updated successfully.",
+      });
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update menu item.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     if (!currentUser?.permissions.canDeleteMenu) {
       toast({
         title: "Access Denied",
@@ -674,11 +361,35 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
       return;
     }
 
-    setMenuItems(menuItems.filter(item => item.id !== id));
-    toast({
-      title: "Success",
-      description: "Menu item deleted successfully.",
-    });
+    try {
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting menu item:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete menu item.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMenuItems(menuItems.filter(item => item.id !== id));
+      toast({
+        title: "Success",
+        description: "Menu item deleted successfully.",
+      });
+    } catch (err) {
+      console.error('Error:', err);
+      toast({
+        title: "Error",
+        description: "Failed to delete menu item.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: Order['status']) => {
@@ -831,101 +542,108 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
                 </Select>
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Image</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Margin</TableHead>
-                    <TableHead>Prep Time</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMenuItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.name}
-                            className="w-16 h-16 object-cover rounded-lg shadow-sm"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <Utensils className="w-6 h-6 text-gray-400" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {item.description}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {getCategoryIcon(item.category)}
-                          <span className="capitalize">{item.category}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>ETB {item.price.toFixed(2)}</TableCell>
-                      <TableCell>ETB {item.cost.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <span className="font-medium text-green-600">
-                          ETB {(item.price - item.cost).toFixed(2)}
-                        </span>
-                      </TableCell>
-                      <TableCell>{item.preparationTime} min</TableCell>
-                      <TableCell>
-                        <Badge variant={item.available ? "default" : "secondary"}>
-                          {item.available ? "Available" : "Unavailable"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {currentUser?.permissions.canUpdateMenu ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedItem(item);
-                                setIsEditItemDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" disabled>
-                              <Lock className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {currentUser?.permissions.canDeleteMenu ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" disabled>
-                              <Lock className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                  <span className="ml-2">Loading menu items...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Image</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Cost</TableHead>
+                      <TableHead>Margin</TableHead>
+                      <TableHead>Prep Time</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMenuItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          {item.image_url || imageMap[item.name] ? (
+                            <img 
+                              src={item.image_url || imageMap[item.name]} 
+                              alt={item.name}
+                              className="w-16 h-16 object-cover rounded-lg shadow-sm"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                              <Utensils className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {item.description}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {getCategoryIcon(item.category)}
+                            <span className="capitalize">{item.category}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>ETB {item.price.toFixed(2)}</TableCell>
+                        <TableCell>ETB {item.cost.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <span className="font-medium text-green-600">
+                            ETB {(item.price - item.cost).toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell>{item.preparation_time} min</TableCell>
+                        <TableCell>
+                          <Badge variant={item.available ? "default" : "secondary"}>
+                            {item.available ? "Available" : "Unavailable"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {currentUser?.permissions.canUpdateMenu ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedItem(item);
+                                  setIsEditItemDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" disabled>
+                                <Lock className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {currentUser?.permissions.canDeleteMenu ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" disabled>
+                                <Lock className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1083,8 +801,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
                 <Input
                   id="prepTime"
                   type="number"
-                  value={newItem.preparationTime}
-                  onChange={(e) => setNewItem({ ...newItem, preparationTime: parseInt(e.target.value) })}
+                  value={newItem.preparation_time}
+                  onChange={(e) => setNewItem({ ...newItem, preparation_time: parseInt(e.target.value) })}
                   placeholder="15"
                 />
               </div>
@@ -1179,8 +897,8 @@ export const FoodBeverage = ({ currentUser }: FoodBeverageProps) => {
                   <Input
                     id="edit-prepTime"
                     type="number"
-                    value={selectedItem.preparationTime}
-                    onChange={(e) => setSelectedItem({ ...selectedItem, preparationTime: parseInt(e.target.value) })}
+                    value={selectedItem.preparation_time}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, preparation_time: parseInt(e.target.value) })}
                     placeholder="15"
                   />
                 </div>
