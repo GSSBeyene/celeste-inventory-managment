@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -43,26 +44,53 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
       return;
     }
 
-    // Simulate signup process
-    setTimeout(() => {
-      if (Object.values(formData).every(field => field.trim())) {
-        localStorage.setItem("isAuthenticated", "true");
-        localStorage.setItem("userEmail", formData.email);
-        localStorage.setItem("userName", `${formData.firstName} ${formData.lastName}`);
+    if (!Object.values(formData).every(field => field.trim())) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            display_name: `${formData.firstName} ${formData.lastName}`,
+          }
+        }
+      });
+
+      if (error) {
         toast({
-          title: "Account created!",
-          description: "Welcome to Hotel Celeste Inventory System.",
-        });
-        navigate("/");
-      } else {
-        toast({
-          title: "Error",
-          description: "Please fill in all fields.",
+          title: "Signup Failed",
+          description: error.message,
           variant: "destructive",
         });
+      } else if (data.user) {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
+        // Don't redirect immediately, wait for email verification
+        onSwitchToLogin();
       }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

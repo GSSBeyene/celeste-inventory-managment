@@ -1,6 +1,9 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,7 +15,8 @@ import {
   Coffee,
   Settings,
   CreditCard,
-  UserCheck
+  UserCheck,
+  LogOut
 } from "lucide-react";
 
 const menuItems = [
@@ -35,8 +39,27 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      window.location.href = "/auth";
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-cyan-600 to-cyan-700 shadow-lg">
+    <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-cyan-600 to-cyan-700 shadow-lg flex flex-col">
       <div className="p-6 bg-cyan-800">
         <div className="flex items-center space-x-3 mb-2">
           <img 
@@ -50,7 +73,7 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
           </div>
         </div>
       </div>
-      <nav className="mt-6">
+      <nav className="mt-6 flex-1">
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -70,6 +93,16 @@ export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
           );
         })}
       </nav>
+      <div className="p-4 border-t border-cyan-600">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-red-300 hover:text-red-100 hover:bg-red-600/20"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
+      </div>
     </div>
   );
 };
