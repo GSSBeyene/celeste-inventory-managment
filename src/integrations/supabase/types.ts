@@ -337,6 +337,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
           display_name: string | null
           first_name: string | null
@@ -347,6 +350,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           display_name?: string | null
           first_name?: string | null
@@ -357,6 +363,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
           display_name?: string | null
           first_name?: string | null
@@ -366,7 +375,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchase_order_items: {
         Row: {

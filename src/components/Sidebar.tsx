@@ -2,7 +2,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
@@ -16,10 +16,11 @@ import {
   Settings,
   CreditCard,
   UserCheck,
+  Users,
   LogOut
 } from "lucide-react";
 
-const menuItems = [
+const baseMenuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "inventory", label: "Inventory", icon: Package },
   { id: "alerts", label: "Stock Alerts", icon: AlertTriangle },
@@ -29,7 +30,14 @@ const menuItems = [
   { id: "purchasing-orders", label: "Purchasing Orders", icon: ShoppingBag },
   { id: "fnb", label: "Food & Beverage", icon: Coffee },
   { id: "credit", label: "Credit Management", icon: CreditCard },
-  { id: "users", label: "User Management", icon: UserCheck },
+  { id: "users", label: "User Management", icon: Users },
+];
+
+const adminMenuItems = [
+  { id: "user-approval", label: "User Approval", icon: UserCheck },
+];
+
+const settingsItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -39,16 +47,24 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+  const { signOut, profile } = useAuth();
   const { toast } = useToast();
+  
+  const isAdmin = profile?.role === 'admin';
+  
+  const menuItems = [
+    ...baseMenuItems,
+    ...(isAdmin ? adminMenuItems : []),
+    ...settingsItems
+  ];
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-      window.location.href = "/auth";
     } catch (error) {
       toast({
         title: "Error",

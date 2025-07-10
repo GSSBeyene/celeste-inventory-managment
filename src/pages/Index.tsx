@@ -1,6 +1,9 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthProvider";
+import AuthPage from "./AuthPage";
+import { PendingApprovalScreen } from "@/components/auth/PendingApprovalScreen";
 import { Sidebar } from "@/components/Sidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { InventoryManager } from "@/components/InventoryManager";
@@ -13,103 +16,41 @@ import { PurchasingOrders } from "@/components/PurchasingOrders";
 import { FoodBeverage } from "@/components/FoodBeverage";
 import { CreditManagement } from "@/components/CreditManagement";
 import { UserManagement, User } from "@/components/UserManagement";
-import { supabase } from "@/integrations/supabase/client";
-import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
+import { UserApproval } from "@/components/UserApproval";
 
 const Index = () => {
+  const { user, isApproved, profile } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  if (!isApproved) {
+    return <PendingApprovalScreen />;
+  }
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user profile after authentication
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setCurrentUser(null);
-          navigate("/auth");
-        }
-        setLoading(false);
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        navigate("/auth");
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      if (profile) {
-        setCurrentUser({
-          id: profile.user_id,
-          name: profile.display_name || `${profile.first_name} ${profile.last_name}`,
-          email: user?.email || "",
-          role: profile.role as "admin" | "manager" | "staff" | "viewer",
-          status: "active",
-          permissions: {
-            canEditMenu: profile.role === "admin" || profile.role === "manager",
-            canDeleteMenu: profile.role === "admin",
-            canUpdateMenu: profile.role === "admin" || profile.role === "manager",
-            canViewReports: true,
-            canManageOrders: true
-          },
-          createdAt: new Date(profile.created_at).toLocaleDateString(),
-          lastLogin: new Date().toLocaleDateString()
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    if (profile) {
+      setCurrentUser({
+        id: profile.user_id,
+        name: profile.display_name || `${profile.first_name} ${profile.last_name}` || "Unknown User",
+        email: user?.email || "",
+        role: profile.role as "admin" | "manager" | "staff" | "viewer",
+        status: "active",
+        permissions: {
+          canEditMenu: profile.role === "admin" || profile.role === "manager",
+          canDeleteMenu: profile.role === "admin",
+          canUpdateMenu: profile.role === "admin" || profile.role === "manager",
+          canViewReports: true,
+          canManageOrders: true
+        },
+        createdAt: new Date(profile.created_at).toLocaleDateString(),
+        lastLogin: new Date().toLocaleDateString()
+      });
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-cyan-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session || !user) {
-    return null;
-  }
+  }, [profile, user]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -139,6 +80,8 @@ const Index = () => {
             setCurrentUser(updatedCurrentUser);
           }
         }} />;
+      case "user-approval":
+        return <UserApproval />;
       case "settings":
         return <Settings />;
       default:
