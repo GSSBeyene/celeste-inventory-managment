@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 interface InventoryItem {
   id: number;
   name: string;
+  itemCode: string;
   category: string;
   currentStock: number;
   minStock: number;
@@ -30,6 +31,7 @@ export const InventoryManager = () => {
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     name: "",
+    itemCode: "",
     category: "rooms",
     currentStock: 0,
     minStock: 0,
@@ -50,6 +52,7 @@ export const InventoryManager = () => {
     {
       id: 1,
       name: "Premium Bath Towels",
+      itemCode: "BTW-001",
       category: "rooms",
       currentStock: 245,
       minStock: 50,
@@ -60,6 +63,7 @@ export const InventoryManager = () => {
     {
       id: 2,
       name: "Luxury Shampoo Bottles",
+      itemCode: "SHP-002",
       category: "rooms",
       currentStock: 12,
       minStock: 20,
@@ -70,6 +74,7 @@ export const InventoryManager = () => {
     {
       id: 3,
       name: "All-Purpose Cleaner",
+      itemCode: "CLE-003",
       category: "housekeeping",
       currentStock: 89,
       minStock: 25,
@@ -80,6 +85,7 @@ export const InventoryManager = () => {
     {
       id: 4,
       name: "Coffee Pods - Premium Blend",
+      itemCode: "COF-004",
       category: "minibar",
       currentStock: 156,
       minStock: 50,
@@ -90,6 +96,7 @@ export const InventoryManager = () => {
     {
       id: 5,
       name: "LED Light Bulbs",
+      itemCode: "LED-005",
       category: "maintenance",
       currentStock: 34,
       minStock: 15,
@@ -100,6 +107,7 @@ export const InventoryManager = () => {
     {
       id: 6,
       name: "Egyptian Cotton Bed Sheets",
+      itemCode: "BED-006",
       category: "rooms",
       currentStock: 78,
       minStock: 30,
@@ -140,7 +148,7 @@ export const InventoryManager = () => {
   };
 
   const handleAddItem = () => {
-    if (!newItem.name || !newItem.location) {
+    if (!newItem.name || !newItem.itemCode || !newItem.location) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
@@ -158,6 +166,7 @@ export const InventoryManager = () => {
     setInventoryItems([...inventoryItems, item]);
     setNewItem({
       name: "",
+      itemCode: "",
       category: "rooms",
       currentStock: 0,
       minStock: 0,
@@ -229,14 +238,25 @@ export const InventoryManager = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="itemName">Item Name</Label>
-                <Input
-                  id="itemName"
-                  value={newItem.name}
-                  onChange={(e) => setNewItem({...newItem, name: e.target.value})}
-                  placeholder="Enter item name"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="itemName">Item Name</Label>
+                  <Input
+                    id="itemName"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({...newItem, name: e.target.value})}
+                    placeholder="Enter item name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="itemCode">Item Code</Label>
+                  <Input
+                    id="itemCode"
+                    value={newItem.itemCode}
+                    onChange={(e) => setNewItem({...newItem, itemCode: e.target.value})}
+                    placeholder="Enter item code (e.g., BTW-001)"
+                  />
+                </div>
               </div>
               
               {/* Image Upload Section */}
