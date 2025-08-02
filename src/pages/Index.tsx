@@ -23,20 +23,12 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  if (!user) {
-    return <AuthPage />;
-  }
-
-  if (!isApproved) {
-    return <PendingApprovalScreen />;
-  }
-
   useEffect(() => {
-    if (profile) {
+    if (profile && user) {
       setCurrentUser({
         id: profile.user_id,
         name: profile.display_name || `${profile.first_name} ${profile.last_name}` || "Unknown User",
-        email: user?.email || "",
+        email: user.email || "",
         role: profile.role as "admin" | "manager" | "staff" | "viewer",
         status: "active",
         permissions: {
@@ -51,6 +43,14 @@ const Index = () => {
       });
     }
   }, [profile, user]);
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  if (!isApproved) {
+    return <PendingApprovalScreen />;
+  }
 
   const renderContent = () => {
     switch (activeTab) {
