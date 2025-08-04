@@ -2,60 +2,75 @@
 import { AlertTriangle, Package, Clock, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Alert {
+  id: string;
+  item: string;
+  currentStock: number;
+  minStock: number;
+  category: string;
+  priority: "high" | "medium" | "low";
+  lastCheck: string;
+}
 
 export const StockAlerts = () => {
-  const alerts = [
-    {
-      id: 1,
-      item: "Luxury Shampoo Bottles",
-      currentStock: 12,
-      minStock: 20,
-      location: "Housekeeping Storage",
-      priority: "high",
-      category: "Room Amenities",
-      lastCheck: "4 hours ago"
-    },
-    {
-      id: 2,
-      item: "Toilet Paper Rolls",
-      currentStock: 45,
-      minStock: 50,
-      location: "Housekeeping Storage",
-      priority: "medium",
-      category: "Housekeeping",
-      lastCheck: "2 hours ago"
-    },
-    {
-      id: 3,
-      item: "Coffee Capsules - Espresso",
-      currentStock: 28,
-      minStock: 40,
-      location: "Minibar Storage",
-      priority: "medium",
-      category: "Minibar & F&B",
-      lastCheck: "6 hours ago"
-    },
-    {
-      id: 4,
-      item: "Bathroom Cleaning Spray",
-      currentStock: 8,
-      minStock: 15,
-      location: "Cleaning Supplies",
-      priority: "high",
-      category: "Housekeeping",
-      lastCheck: "1 hour ago"
-    },
-    {
-      id: 5,
-      item: "Premium Hand Soap",
-      currentStock: 22,
-      minStock: 25,
-      location: "Housekeeping Storage",
-      priority: "low",
-      category: "Room Amenities",
-      lastCheck: "3 hours ago"
-    }
-  ];
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStockAlerts = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch inventory items with their current stock levels
+        const { data: stockData, error } = await supabase
+          .from('stock_levels')
+          .select(`
+            current_quantity,
+            last_updated,
+            inventory_items!inner (
+              id,
+              name,
+              category,
+              reorder_level
+            )
+          `)
+          .lt('current_quantity', 'inventory_items.reorder_level');
+
+        if (error) throw error;
+
+        const alertsData: Alert[] = stockData?.map((item: any) => {
+          const currentStock = item.current_quantity;
+          const minStock = item.inventory_items.reorder_level;
+          const shortage = minStock - currentStock;
+          
+          let priority: "high" | "medium" | "low" = "low";
+          if (shortage >= 10) priority = "high";
+          else if (shortage >= 5) priority = "medium";
+
+          return {
+            id: item.inventory_items.id,
+            item: item.inventory_items.name,
+            currentStock,
+            minStock,
+            category: item.inventory_items.category,
+            priority,
+            lastCheck: new Date(item.last_updated).toLocaleString()
+          };
+        }) || [];
+
+        setAlerts(alertsData);
+      } catch (error) {
+        console.error('Error fetching stock alerts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockAlerts();
+  }, []);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -181,16 +196,16 @@ export const StockAlerts = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>{alert.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>Last checked: {alert.lastCheck}</span>
-                    </div>
-                  </div>
+                   <div className="flex items-center space-x-4 text-sm text-gray-600">
+                     <div className="flex items-center space-x-1">
+                       <MapPin className="w-4 h-4" />
+                       <span>Warehouse</span>
+                     </div>
+                     <div className="flex items-center space-x-1">
+                       <Clock className="w-4 h-4" />
+                       <span>Last checked: {alert.lastCheck}</span>
+                     </div>
+                   </div>
                 </div>
 
                 <div className="flex flex-col space-y-2 ml-4">

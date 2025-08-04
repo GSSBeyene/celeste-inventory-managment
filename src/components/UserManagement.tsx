@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./auth/AuthProvider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,77 +46,56 @@ interface UserManagementProps {
 
 export const UserManagement = ({ currentUser, onUserUpdate }: UserManagementProps) => {
   const { toast } = useToast();
+  const { profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: "1",
-      name: "Admin User",
-      email: "admin@celeste-hotel.com",
-      role: "admin",
-      status: "active",
-      permissions: {
-        canEditMenu: true,
-        canDeleteMenu: true,
-        canUpdateMenu: true,
-        canViewReports: true,
-        canManageOrders: true
-      },
-      createdAt: "2024-01-01",
-      lastLogin: "2024-01-15 09:30"
-    },
-    {
-      id: "2",
-      name: "Kitchen Manager",
-      email: "kitchen@celeste-hotel.com",
-      role: "manager",
-      status: "active",
-      permissions: {
-        canEditMenu: true,
-        canDeleteMenu: false,
-        canUpdateMenu: true,
-        canViewReports: true,
-        canManageOrders: true
-      },
-      createdAt: "2024-01-02",
-      lastLogin: "2024-01-15 08:45"
-    },
-    {
-      id: "3",
-      name: "Restaurant Staff",
-      email: "staff@celeste-hotel.com",
-      role: "staff",
-      status: "active",
-      permissions: {
-        canEditMenu: false,
-        canDeleteMenu: false,
-        canUpdateMenu: false,
-        canViewReports: false,
-        canManageOrders: true
-      },
-      createdAt: "2024-01-03",
-      lastLogin: "2024-01-15 07:20"
-    },
-    {
-      id: "4",
-      name: "Guest Viewer",
-      email: "viewer@celeste-hotel.com",
-      role: "viewer",
-      status: "inactive",
-      permissions: {
-        canEditMenu: false,
-        canDeleteMenu: false,
-        canUpdateMenu: false,
-        canViewReports: false,
-        canManageOrders: false
-      },
-      createdAt: "2024-01-04",
-      lastLogin: "2024-01-10 15:30"
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch profiles from Supabase
+        const { data: profilesData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transform profiles data to match User interface
+        const formattedUsers: User[] = profilesData?.map(profile => ({
+          id: profile.id,
+          name: profile.display_name || `${profile.first_name} ${profile.last_name}` || 'Unknown User',
+          email: profile.user_id, // We'll use user_id as a placeholder since we don't have email in profiles
+          role: (profile.role as "admin" | "manager" | "staff" | "viewer") || "staff",
+          status: profile.approved ? "active" : "inactive",
+          permissions: getRolePermissions((profile.role as User['role']) || "staff"),
+          createdAt: new Date(profile.created_at).toISOString().split('T')[0],
+          lastLogin: profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : "Never"
+        })) || [];
+
+        setUsers(formattedUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load users.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (profile?.role === "admin") {
+      fetchUsers();
     }
-  ]);
+  }, [profile, toast]);
 
   const [newUser, setNewUser] = useState<Partial<User>>({
     name: "",

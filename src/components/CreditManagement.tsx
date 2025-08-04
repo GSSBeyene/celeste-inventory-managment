@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,71 +69,75 @@ const serviceTypes = [
 ];
 
 export const CreditManagement = () => {
-  const [customers, setCustomers] = useState<CreditCustomer[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '+1-555-0123',
-      roomNumber: '101',
-      creditLimit: 50000,
-      currentBalance: 12500,
-      paidAmount: 7500,
-      registrationDate: '2024-01-15',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah.j@email.com',
-      phone: '+1-555-0456',
-      roomNumber: '205',
-      creditLimit: 75000,
-      currentBalance: 37500,
-      paidAmount: 0,
-      registrationDate: '2024-01-18',
-      status: 'active'
-    }
-  ]);
+  const [customers, setCustomers] = useState<CreditCustomer[]>([]);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [transactions, setTransactions] = useState<CreditTransaction[]>([
-    {
-      id: '1',
-      customerId: '1',
-      customerName: 'John Smith',
-      serviceType: 'Restaurant & Bar',
-      description: 'Dinner at hotel restaurant',
-      amount: 4275,
-      type: 'charge',
-      date: '2024-01-20',
-      staff: 'Mike Johnson',
-      paymentStatus: 'unpaid'
-    },
-    {
-      id: '2',
-      customerId: '1',
-      customerName: 'John Smith',
-      serviceType: 'Beer & Wine',
-      description: 'Premium beer selection',
-      amount: 1750,
-      type: 'charge',
-      date: '2024-01-21',
-      staff: 'Lisa Wong',
-      paymentStatus: 'paid'
-    },
-    {
-      id: '3',
-      customerId: '2',
-      customerName: 'Sarah Johnson',
-      serviceType: 'Alcoholic Beverages',
-      description: 'Cocktails at lobby bar',
-      amount: 6000,
-      type: 'charge',
-      date: '2024-01-21',
-      staff: 'Anna Davis',
-      paymentStatus: 'unpaid'
-    }
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch customers from Supabase
+        const { data: customersData, error: customersError } = await supabase
+          .from('customers')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (customersError) throw customersError;
+
+        // Transform customers data to match interface
+        const formattedCustomers: CreditCustomer[] = customersData?.map(customer => ({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          roomNumber: customer.address || '',
+          creditLimit: customer.credit_limit,
+          currentBalance: customer.current_balance,
+          paidAmount: 0, // We'll calculate this from transactions
+          registrationDate: new Date(customer.created_at).toISOString().split('T')[0],
+          status: customer.status === 'active' ? 'active' : 'inactive'
+        })) || [];
+
+        // Fetch credit transactions from Supabase
+        const { data: transactionsData, error: transactionsError } = await supabase
+          .from('credit_transactions')
+          .select(`
+            *,
+            customers (name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (transactionsError) throw transactionsError;
+
+        // Transform transactions data to match interface
+        const formattedTransactions: CreditTransaction[] = transactionsData?.map(transaction => ({
+          id: transaction.id,
+          customerId: transaction.customer_id,
+          customerName: transaction.customers?.name || 'Unknown',
+          serviceType: transaction.description || 'Service',
+          description: transaction.description || '',
+          amount: transaction.amount,
+          type: transaction.transaction_type === 'credit' ? 'credit' : 
+                transaction.transaction_type === 'debit' ? 'charge' : 'payment',
+          date: new Date(transaction.created_at).toISOString().split('T')[0],
+          staff: transaction.created_by || 'System',
+          paymentStatus: 'paid' // Transactions in the system are already processed
+        })) || [];
+
+        setCustomers(formattedCustomers);
+        setTransactions(formattedTransactions);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);

@@ -19,70 +19,93 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./auth/AuthProvider";
 
 export const Dashboard = () => {
-  const [userRole, setUserRole] = useState<string>("staff");
-  const [userPermissions, setUserPermissions] = useState({
-    inventory: false,
-    sales: false,
-    reports: false,
-    settings: false,
-    purchasing: false,
-    fnb: false,
-    credit: false,
-    alerts: false
+  const { profile } = useAuth();
+  const [stats, setStats] = useState({
+    totalItems: 0,
+    lowStockItems: 0,
+    totalSales: 0,
+    totalPurchaseOrders: 0,
+    totalCustomers: 0,
+    totalMenuItems: 0
   });
+  const [loading, setLoading] = useState(true);
+
+  const userRole = profile?.role || "staff";
+  const userPermissions = {
+    inventory: profile?.role === "admin" || profile?.role === "manager",
+    sales: profile?.role === "admin" || profile?.role === "manager",
+    reports: profile?.role === "admin" || profile?.role === "manager",
+    settings: profile?.role === "admin",
+    purchasing: profile?.role === "admin" || profile?.role === "manager",
+    fnb: profile?.role === "admin" || profile?.role === "manager",
+    credit: profile?.role === "admin" || profile?.role === "manager",
+    alerts: true
+  };
 
   useEffect(() => {
-    // Get user role and permissions from localStorage
-    const role = localStorage.getItem("userRole") || "staff";
-    const permissions = localStorage.getItem("userPermissions");
-    setUserRole(role);
-    if (permissions) {
-      setUserPermissions(JSON.parse(permissions));
-    } else {
-      // Default permissions based on role
-      if (role === "admin") {
-        setUserPermissions({ 
-          inventory: true, 
-          sales: true, 
-          reports: true, 
-          settings: true, 
-          purchasing: true, 
-          fnb: true, 
-          credit: true, 
-          alerts: true 
-        });
-      } else if (role === "manager") {
-        setUserPermissions({ 
-          inventory: true, 
-          sales: true, 
-          reports: true, 
-          settings: false, 
-          purchasing: true, 
-          fnb: true, 
-          credit: true, 
-          alerts: true 
-        });
-      } else {
-        setUserPermissions({ 
-          inventory: true, 
-          sales: false, 
-          reports: false, 
-          settings: false, 
-          purchasing: false, 
-          fnb: false, 
-          credit: false, 
-          alerts: true 
-        });
-      }
-    }
-  }, []);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch inventory items count
+        const { count: inventoryCount } = await supabase
+          .from('inventory_items')
+          .select('*', { count: 'exact', head: true });
 
-  const stats = [
+        // Fetch low stock items (where current stock is below reorder level)
+        const { data: stockLevels } = await supabase
+          .from('stock_levels')
+          .select('current_quantity, inventory_items!inner(reorder_level)')
+          .lt('current_quantity', 'inventory_items.reorder_level');
+
+        // Fetch sales orders count
+        const { count: salesCount } = await supabase
+          .from('sales_orders')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch purchase orders count
+        const { count: purchaseOrdersCount } = await supabase
+          .from('purchase_orders')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch customers count
+        const { count: customersCount } = await supabase
+          .from('customers')
+          .select('*', { count: 'exact', head: true });
+
+        // Fetch menu items count
+        const { count: menuItemsCount } = await supabase
+          .from('menu_items')
+          .select('*', { count: 'exact', head: true });
+
+        setStats({
+          totalItems: inventoryCount || 0,
+          lowStockItems: stockLevels?.length || 0,
+          totalSales: salesCount || 0,
+          totalPurchaseOrders: purchaseOrdersCount || 0,
+          totalCustomers: customersCount || 0,
+          totalMenuItems: menuItemsCount || 0
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (profile) {
+      fetchDashboardData();
+    }
+  }, [profile]);
+
+  const statsCards = [
     {
       title: "Total Items",
-      value: "2,847",
+      value: loading ? "..." : stats.totalItems.toString(),
       change: "+12%",
       icon: Package,
       color: "text-blue-600",
@@ -91,7 +114,7 @@ export const Dashboard = () => {
     },
     {
       title: "Low Stock Items",
-      value: "23",
+      value: loading ? "..." : stats.lowStockItems.toString(),
       change: "-8%",
       icon: AlertTriangle,
       color: "text-orange-600",
@@ -99,17 +122,8 @@ export const Dashboard = () => {
       requiredPermission: "alerts"
     },
     {
-      title: "Room Occupancy",
-      value: "87%",
-      change: "+5%",
-      icon: Bed,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      requiredPermission: null
-    },
-    {
-      title: "Monthly Sales",
-      value: "$12,450",
+      title: "Total Sales",
+      value: loading ? "..." : stats.totalSales.toString(),
       change: "+18%",
       icon: TrendingUp,
       color: "text-purple-600",
@@ -118,7 +132,7 @@ export const Dashboard = () => {
     },
     {
       title: "Purchase Orders",
-      value: "156",
+      value: loading ? "..." : stats.totalPurchaseOrders.toString(),
       change: "+7%",
       icon: ShoppingBag,
       color: "text-indigo-600",
@@ -126,8 +140,8 @@ export const Dashboard = () => {
       requiredPermission: "purchasing"
     },
     {
-      title: "F&B Revenue",
-      value: "$8,340",
+      title: "Menu Items",
+      value: loading ? "..." : stats.totalMenuItems.toString(),
       change: "+22%",
       icon: Coffee,
       color: "text-orange-600",
@@ -135,8 +149,8 @@ export const Dashboard = () => {
       requiredPermission: "fnb"
     },
     {
-      title: "Credit Accounts",
-      value: "89",
+      title: "Credit Customers",
+      value: loading ? "..." : stats.totalCustomers.toString(),
       change: "+5%",
       icon: CreditCard,
       color: "text-emerald-600",
@@ -299,7 +313,7 @@ export const Dashboard = () => {
 
       {/* Statistics Cards - filtered by permissions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.filter(stat => hasPermission(stat.requiredPermission)).map((stat, index) => {
+        {statsCards.filter(stat => hasPermission(stat.requiredPermission)).map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
