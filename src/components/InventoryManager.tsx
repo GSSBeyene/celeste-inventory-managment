@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2, Upload, X } from "lucide-react";
+import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2, Upload, X, FileText, Download, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "./auth/AuthProvider";
+import { parseExcelFile, generateExcelTemplate, ExcelInventoryItem } from "@/utils/excelParser";
+import { uploadDocument, UploadedDocument } from "@/utils/documentUpload";
 
 interface InventoryItem {
   id: number;
@@ -23,12 +26,17 @@ interface InventoryItem {
 
 export const InventoryManager = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+  const excelFileInputRef = useRef<HTMLInputElement>(null);
   const [newItem, setNewItem] = useState({
     name: "",
     itemCode: "",
@@ -216,6 +224,74 @@ export const InventoryManager = () => {
     return { status: "Good", color: "text-green-600 bg-green-50" };
   };
 
+  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploading(true);
+    try {
+      // Parse Excel file
+      const excelItems = await parseExcelFile(file);
+      
+      if (excelItems.length === 0) {
+        toast({
+          title: "Error",
+          description: "No valid items found in the Excel file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Upload document to Supabase storage
+      const uploadedDoc = await uploadDocument(file, user.id);
+      setUploadedDocuments(prev => [...prev, uploadedDoc]);
+
+      // Convert Excel items to inventory items
+      const newItems: InventoryItem[] = excelItems.map(item => ({
+        id: Date.now() + Math.random(),
+        name: item.name,
+        itemCode: item.itemCode,
+        category: item.category,
+        currentStock: item.currentStock,
+        minStock: item.minStock,
+        unit: item.unit,
+        location: item.location,
+        lastUpdated: "Just now"
+      }));
+
+      // Add items to inventory
+      setInventoryItems(prev => [...prev, ...newItems]);
+      setIsExcelUploadOpen(false);
+
+      toast({
+        title: "Success",
+        description: `Successfully imported ${newItems.length} items from Excel file.`,
+      });
+
+      // Reset file input
+      if (excelFileInputRef.current) {
+        excelFileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error('Excel upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process Excel file. Please check the format and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    generateExcelTemplate();
+    toast({
+      title: "Template Downloaded",
+      description: "Excel template has been downloaded to your computer.",
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -223,14 +299,89 @@ export const InventoryManager = () => {
           <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-gray-600 mt-2">Manage and track all hotel inventory items</p>
         </div>
-        <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add New Item
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={handleDownloadTemplate}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Download Template
+          </Button>
+          <Dialog open={isExcelUploadOpen} onOpenChange={setIsExcelUploadOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4" />
+                Import Excel
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Import Inventory from Excel</DialogTitle>
+                <DialogDescription>
+                  Upload an Excel file to import multiple inventory items at once.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Upload Excel File</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Supports .xlsx, .xls files. Make sure your file follows the template format.
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      onClick={() => excelFileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {isUploading ? "Uploading..." : "Choose Excel File"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadTemplate}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Template
+                    </Button>
+                  </div>
+                  <input
+                    ref={excelFileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleExcelUpload}
+                    className="hidden"
+                  />
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-blue-900 mb-2">Required Columns:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Name - Item name</li>
+                    <li>• Item Code - Unique identifier</li>
+                    <li>• Category - rooms, housekeeping, minibar, or maintenance</li>
+                    <li>• Current Stock - Number in stock</li>
+                    <li>• Min Stock - Minimum required</li>
+                    <li>• Unit - Unit of measure (pieces, bottles, etc.)</li>
+                    <li>• Location - Storage location</li>
+                  </ul>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsExcelUploadOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Item
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add New Inventory Item</DialogTitle>
               <DialogDescription>
@@ -367,6 +518,7 @@ export const InventoryManager = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Search and Filter */}
