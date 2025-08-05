@@ -208,21 +208,42 @@ export const UserManagement = ({ currentUser, onUserUpdate }: UserManagementProp
     });
   };
 
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!selectedUser) return;
 
-    const updatedUsers = users.map(user => 
-      user.id === selectedUser.id ? selectedUser : user
-    );
-    setUsers(updatedUsers);
-    onUserUpdate?.(updatedUsers);
-    setIsEditUserDialogOpen(false);
-    setSelectedUser(null);
+    try {
+      // Update the user's role in the database
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          role: selectedUser.role,
+          display_name: selectedUser.name 
+        })
+        .eq('id', selectedUser.id);
 
-    toast({
-      title: "Success",
-      description: "User updated successfully.",
-    });
+      if (error) throw error;
+
+      // Update local state
+      const updatedUsers = users.map(user => 
+        user.id === selectedUser.id ? selectedUser : user
+      );
+      setUsers(updatedUsers);
+      onUserUpdate?.(updatedUsers);
+      setIsEditUserDialogOpen(false);
+      setSelectedUser(null);
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
