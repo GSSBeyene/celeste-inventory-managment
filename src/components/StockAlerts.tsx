@@ -23,43 +23,36 @@ export const StockAlerts = () => {
     const fetchStockAlerts = async () => {
       try {
         setLoading(true);
-        
-        // Fetch inventory items with their current stock levels
-        const { data: stockData, error } = await supabase
-          .from('stock_levels')
-          .select(`
-            current_quantity,
-            last_updated,
-            inventory_items!inner (
-              id,
-              name,
-              category,
-              reorder_level
-            )
-          `)
-          .lt('current_quantity', 'inventory_items.reorder_level');
 
-        if (error) throw error;
+        const [{ data: itemsData, error: itemsError }, { data: stockData, error: stockError }] = await Promise.all([
+          supabase.from('inventory_items').select('id, name, category, reorder_level'),
+          supabase.from('stock_levels').select('item_id, current_quantity, last_updated')
+        ]);
+        if (itemsError) throw itemsError;
+        if (stockError) throw stockError;
 
-        const alertsData: Alert[] = stockData?.map((item: any) => {
-          const currentStock = item.current_quantity;
-          const minStock = item.inventory_items.reorder_level;
-          const shortage = minStock - currentStock;
-          
-          let priority: "high" | "medium" | "low" = "low";
-          if (shortage >= 10) priority = "high";
-          else if (shortage >= 5) priority = "medium";
-
-          return {
-            id: item.inventory_items.id,
-            item: item.inventory_items.name,
-            currentStock,
-            minStock,
-            category: item.inventory_items.category,
-            priority,
-            lastCheck: new Date(item.last_updated).toLocaleString()
-          };
-        }) || [];
+        const itemMap = new Map((itemsData || []).map((i: any) => [i.id, i]));
+        const alertsData: Alert[] = (stockData || [])
+          .map((s: any) => {
+            const item = itemMap.get(s.item_id);
+            if (!item) return null;
+            const currentStock = s.current_quantity;
+            const minStock = item.reorder_level || 0;
+            const shortage = Math.max(0, minStock - currentStock);
+            let priority: "high" | "medium" | "low" = "low";
+            if (shortage >= 10) priority = "high";
+            else if (shortage >= 5) priority = "medium";
+            return {
+              id: item.id,
+              item: item.name,
+              currentStock,
+              minStock,
+              category: item.category,
+              priority,
+              lastCheck: new Date(s.last_updated).toLocaleString()
+            } as Alert;
+          })
+          .filter(Boolean) as Alert[];
 
         setAlerts(alertsData);
       } catch (error) {

@@ -23,14 +23,14 @@ export const uploadDocument = async (file: File, userId: string): Promise<Upload
 
     if (error) throw error;
 
-    const { data: { publicUrl } } = supabase.storage
+    const { data: signed } = await supabase.storage
       .from('documents')
-      .getPublicUrl(data.path);
+      .createSignedUrl(data.path, 60 * 60 * 24 * 7); // 7 days
 
     return {
       id: data.path,
       name: file.name,
-      url: publicUrl,
+      url: signed?.signedUrl || '',
       type: file.type,
       size: file.size,
       uploadedAt: new Date().toISOString()
@@ -63,14 +63,22 @@ export const listUserDocuments = async (userId: string): Promise<UploadedDocumen
 
     if (error) throw error;
 
-    return data.map(file => ({
-      id: `${userId}/${file.name}`,
-      name: file.name,
-      url: supabase.storage.from('documents').getPublicUrl(`${userId}/${file.name}`).data.publicUrl,
-      type: file.metadata?.mimetype || 'application/octet-stream',
-      size: file.metadata?.size || 0,
-      uploadedAt: file.created_at || new Date().toISOString()
+    const mapped = await Promise.all((data || []).map(async (file) => {
+      const path = `${userId}/${file.name}`;
+      const { data: signed } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+      return {
+        id: path,
+        name: file.name,
+        url: signed?.signedUrl || '',
+        type: file.metadata?.mimetype || 'application/octet-stream',
+        size: file.metadata?.size || 0,
+        uploadedAt: file.created_at || new Date().toISOString()
+      } as UploadedDocument;
     }));
+
+    return mapped;
   } catch (error) {
     throw new Error(`Failed to list documents: ${error}`);
   }

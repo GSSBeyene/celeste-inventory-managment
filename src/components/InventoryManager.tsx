@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Search, Plus, Filter, Package, Bed, Droplets, Coffee, Wrench, Edit, Trash2, Upload, X, FileText, Download, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "./auth/AuthProvider";
 import { parseExcelFile, generateExcelTemplate, ExcelInventoryItem } from "@/utils/excelParser";
 import { uploadDocument, UploadedDocument } from "@/utils/documentUpload";
-
+import { supabase } from "@/integrations/supabase/client";
 interface InventoryItem {
-  id: number;
+  id: string;
   name: string;
   itemCode: string;
   category: string;
@@ -56,74 +56,51 @@ export const InventoryManager = () => {
     { id: "maintenance", name: "Maintenance", icon: Wrench, color: "bg-purple-500" },
   ];
 
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    {
-      id: 1,
-      name: "Premium Bath Towels",
-      itemCode: "BTW-001",
-      category: "rooms",
-      currentStock: 245,
-      minStock: 50,
-      unit: "pieces",
-      location: "Linen Room A",
-      lastUpdated: "2 hours ago",
-    },
-    {
-      id: 2,
-      name: "Luxury Shampoo Bottles",
-      itemCode: "SHP-002",
-      category: "rooms",
-      currentStock: 12,
-      minStock: 20,
-      unit: "bottles",
-      location: "Housekeeping Storage",
-      lastUpdated: "4 hours ago",
-    },
-    {
-      id: 3,
-      name: "All-Purpose Cleaner",
-      itemCode: "CLE-003",
-      category: "housekeeping",
-      currentStock: 89,
-      minStock: 25,
-      unit: "bottles",
-      location: "Cleaning Supplies",
-      lastUpdated: "1 day ago",
-    },
-    {
-      id: 4,
-      name: "Coffee Pods - Premium Blend",
-      itemCode: "COF-004",
-      category: "minibar",
-      currentStock: 156,
-      minStock: 50,
-      unit: "pods",
-      location: "Minibar Storage",
-      lastUpdated: "6 hours ago",
-    },
-    {
-      id: 5,
-      name: "LED Light Bulbs",
-      itemCode: "LED-005",
-      category: "maintenance",
-      currentStock: 34,
-      minStock: 15,
-      unit: "pieces",
-      location: "Maintenance Room",
-      lastUpdated: "3 days ago",
-    },
-    {
-      id: 6,
-      name: "Egyptian Cotton Bed Sheets",
-      itemCode: "BED-006",
-      category: "rooms",
-      currentStock: 78,
-      minStock: 30,
-      unit: "sets",
-      location: "Linen Room B",
-      lastUpdated: "1 day ago",
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchInventory = async () => {
+    setLoading(true);
+    try {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('inventory_items')
+        .select('id, name, item_code, category, reorder_level, unit_of_measure, updated_at');
+      if (itemsError) throw itemsError;
+
+      const ids = (itemsData || []).map((i: any) => i.id);
+      let stockData: any[] = [];
+      if (ids.length) {
+        const { data: sData, error: sError } = await supabase
+          .from('stock_levels')
+          .select('item_id, current_quantity, last_updated')
+          .in('item_id', ids);
+        if (sError) throw sError;
+        stockData = sData || [];
+      }
+      const stockMap = new Map(stockData.map((s: any) => [s.item_id, s]));
+
+      const mapped: InventoryItem[] = (itemsData || []).map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        itemCode: i.item_code,
+        category: i.category,
+        currentStock: stockMap.get(i.id)?.current_quantity ?? 0,
+        minStock: i.reorder_level ?? 0,
+        unit: i.unit_of_measure,
+        location: "",
+        lastUpdated: (stockMap.get(i.id)?.last_updated || i.updated_at || new Date().toISOString())
+      }));
+
+      setInventoryItems(mapped);
+    } catch (e) {
+      console.error('Fetch inventory error', e);
+      toast({ title: 'Error', description: 'Failed to load inventory items.', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  useEffect(() => { fetchInventory(); }, []);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = event.target.files?.[0];
@@ -155,61 +132,102 @@ export const InventoryManager = () => {
     }
   };
 
-  const handleAddItem = () => {
-    if (!newItem.name || !newItem.itemCode || !newItem.location) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+  const handleAddItem = async () => {
+    if (!newItem.name || !newItem.itemCode || !newItem.unit) {
+      toast({ title: "Error", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
 
-    const item: InventoryItem = {
-      id: Date.now(),
-      ...newItem,
-      lastUpdated: "Just now"
-    };
+    try {
+      setIsUploading(true);
+      const { data: insertedItems, error } = await supabase
+        .from('inventory_items')
+        .insert({
+          name: newItem.name,
+          item_code: newItem.itemCode,
+          category: newItem.category,
+          reorder_level: newItem.minStock,
+          unit_of_measure: newItem.unit,
+          description: newItem.location || null,
+        })
+        .select('id, name, item_code, category, reorder_level, unit_of_measure, updated_at')
+        .single();
+      if (error) throw error;
 
-    setInventoryItems([...inventoryItems, item]);
-    setNewItem({
-      name: "",
-      itemCode: "",
-      category: "rooms",
-      currentStock: 0,
-      minStock: 0,
-      unit: "pieces",
-      location: "",
-      image: ""
-    });
-    setIsAddItemOpen(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      const { error: stockErr } = await supabase
+        .from('stock_levels')
+        .insert({ item_id: insertedItems.id, current_quantity: newItem.currentStock });
+      if (stockErr) throw stockErr;
+
+      const item: InventoryItem = {
+        id: insertedItems.id,
+        name: insertedItems.name,
+        itemCode: insertedItems.item_code,
+        category: insertedItems.category,
+        currentStock: newItem.currentStock,
+        minStock: insertedItems.reorder_level ?? 0,
+        unit: insertedItems.unit_of_measure,
+        location: newItem.location,
+        lastUpdated: new Date(insertedItems.updated_at || Date.now()).toString(),
+      };
+
+      setInventoryItems([...inventoryItems, item]);
+      setNewItem({ name: "", itemCode: "", category: "rooms", currentStock: 0, minStock: 0, unit: "pieces", location: "", image: "" });
+      setIsAddItemOpen(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      toast({ title: "Success", description: "Item added successfully." });
+    } catch (e) {
+      console.error('Add item error', e);
+      toast({ title: 'Error', description: 'Failed to add item.', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
     }
-
-    toast({
-      title: "Success",
-      description: "Item added successfully.",
-    });
   };
 
-  const handleUpdateItem = (itemId: number, updates: Partial<InventoryItem>) => {
-    setInventoryItems(inventoryItems.map(item => 
-      item.id === itemId ? { ...item, ...updates, lastUpdated: "Just now" } : item
-    ));
-    
-    toast({
-      title: "Success",
-      description: "Item updated successfully.",
-    });
+  const handleUpdateItem = async (itemId: string, updates: Partial<InventoryItem>) => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .update({
+          name: updates.name,
+          item_code: updates.itemCode,
+          category: updates.category,
+          reorder_level: updates.minStock,
+          unit_of_measure: updates.unit,
+          description: updates.location,
+        })
+        .eq('id', itemId);
+      if (error) throw error;
+
+      if (typeof updates.currentStock === 'number') {
+        const { error: stockErr } = await supabase
+          .from('stock_levels')
+          .update({ current_quantity: updates.currentStock })
+          .eq('item_id', itemId);
+        if (stockErr) throw stockErr;
+      }
+
+      setInventoryItems(inventoryItems.map(item => 
+        item.id === itemId ? { ...item, ...updates, lastUpdated: "Just now" } : item
+      ));
+      toast({ title: "Success", description: "Item updated successfully." });
+    } catch (e) {
+      console.error('Update item error', e);
+      toast({ title: 'Error', description: 'Failed to update item.', variant: 'destructive' });
+    }
   };
 
-  const handleDeleteItem = (itemId: number) => {
-    setInventoryItems(inventoryItems.filter(item => item.id !== itemId));
-    toast({
-      title: "Success",
-      description: "Item deleted successfully.",
-    });
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      await supabase.from('stock_levels').delete().eq('item_id', itemId);
+      const { error } = await supabase.from('inventory_items').delete().eq('id', itemId);
+      if (error) throw error;
+      setInventoryItems(inventoryItems.filter(item => item.id !== itemId));
+      toast({ title: "Success", description: "Item deleted successfully." });
+    } catch (e) {
+      console.error('Delete item error', e);
+      toast({ title: 'Error', description: 'Failed to delete item.', variant: 'destructive' });
+    }
   };
 
   const filteredItems = inventoryItems.filter(item => {
@@ -230,55 +248,61 @@ export const InventoryManager = () => {
 
     setIsUploading(true);
     try {
-      // Parse Excel file
       const excelItems = await parseExcelFile(file);
-      
       if (excelItems.length === 0) {
-        toast({
-          title: "Error",
-          description: "No valid items found in the Excel file.",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "No valid items found in the Excel file.", variant: "destructive" });
         return;
       }
 
-      // Upload document to Supabase storage
+      // Upload source document to storage
       const uploadedDoc = await uploadDocument(file, user.id);
       setUploadedDocuments(prev => [...prev, uploadedDoc]);
 
-      // Convert Excel items to inventory items
-      const newItems: InventoryItem[] = excelItems.map(item => ({
-        id: Date.now() + Math.random(),
-        name: item.name,
-        itemCode: item.itemCode,
-        category: item.category,
-        currentStock: item.currentStock,
-        minStock: item.minStock,
-        unit: item.unit,
-        location: item.location,
-        lastUpdated: "Just now"
+      // Insert inventory items
+      const itemsToInsert = excelItems.map(i => ({
+        name: i.name,
+        item_code: i.itemCode,
+        category: i.category,
+        reorder_level: i.minStock,
+        unit_of_measure: i.unit,
+        description: i.location || i.description || null,
+      }));
+      const { data: insertedItems, error: insertErr } = await supabase
+        .from('inventory_items')
+        .insert(itemsToInsert)
+        .select('id, name, item_code, category, reorder_level, unit_of_measure, updated_at');
+      if (insertErr) throw insertErr;
+
+      // Create stock levels for inserted items
+      const stockInserts = insertedItems.map((ins: any, idx: number) => ({
+        item_id: ins.id,
+        current_quantity: excelItems[idx].currentStock,
+      }));
+      if (stockInserts.length) {
+        const { error: stockErr } = await supabase.from('stock_levels').insert(stockInserts);
+        if (stockErr) throw stockErr;
+      }
+
+      // Update UI state
+      const newItems: InventoryItem[] = insertedItems.map((ins: any, idx: number) => ({
+        id: ins.id,
+        name: ins.name,
+        itemCode: ins.item_code,
+        category: ins.category,
+        currentStock: excelItems[idx].currentStock,
+        minStock: ins.reorder_level ?? 0,
+        unit: ins.unit_of_measure,
+        location: excelItems[idx].location,
+        lastUpdated: new Date(ins.updated_at || Date.now()).toString()
       }));
 
-      // Add items to inventory
       setInventoryItems(prev => [...prev, ...newItems]);
       setIsExcelUploadOpen(false);
-
-      toast({
-        title: "Success",
-        description: `Successfully imported ${newItems.length} items from Excel file.`,
-      });
-
-      // Reset file input
-      if (excelFileInputRef.current) {
-        excelFileInputRef.current.value = "";
-      }
+      toast({ title: "Success", description: `Successfully imported ${newItems.length} items from Excel file.` });
+      if (excelFileInputRef.current) excelFileInputRef.current.value = "";
     } catch (error) {
       console.error('Excel upload error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process Excel file. Please check the format and try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to process Excel file. Please check the format and try again.", variant: "destructive" });
     } finally {
       setIsUploading(false);
     }
